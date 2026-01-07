@@ -1,10 +1,7 @@
 /**
- * @version v1.0.1
- */
-
-/**
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
+ * @version v1.0.1
  */
 define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
 
