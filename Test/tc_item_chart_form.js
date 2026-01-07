@@ -1,12 +1,12 @@
 /**
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
- * @version v1.0.1
+ * @version v1.0.3
  */
 define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
 
 
-    function beforeLoad(context) {
+    function beforeLoad(context) { //test
         try {
             if (context.type !== context.UserEventType.VIEW) return; //test1 test 2
 
@@ -41,5 +41,3 @@ define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
         }
     }
 
-
-    function generateAssemblyHtml(inventoryData, soUsageData) {
