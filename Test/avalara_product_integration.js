@@ -75,7 +75,7 @@
                        const url = "https://excisesbx.avalara.com/api/v1/AlternateProducts/Update";
 
 
-                       const updateResponse = https.post({
+                       const updateResponse = https.put({
                           url: url,
                           body: JSON.stringify(payload),
                           headers: headers
@@ -106,16 +106,3 @@
                         ProductCode: "CIGAR",
                         CustomId: itemName ? itemName : customId,
                         EffectiveDate: params.custscript_effective_date,
-                        ObsoleteDate: "",
-                        LockedDate: "",
-                        BrandCode: "",
-                        Style: "",
-                        UnitOfMeasure: "PAK",
-                        UnitsPerPackage: unitCapacity,
-                        Description: brandDesc,
-                        ModifiedRiskType: "",
-                        ModifiedRiskNumber: "",
-                        UnitVolume: 0,
-                        UnitWeight: 0,
-                        UnitVolumeUnitOfMeasure: "",
-                        UnitWeightUnitOfMeasure: "",
