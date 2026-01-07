@@ -8,7 +8,7 @@ define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
 
     function beforeLoad(context) { //test
         try {
-            if (context.type !== context.UserEventType.VIEW) return; //test1 test 2
+            if (context.type !== context.UserEventType.VIEW) return;
 
 
             var form = context.form;
