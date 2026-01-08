@@ -12,7 +12,7 @@ define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], fun
 // test again
 
 
-    var purchaseOrder = scriptContext.newRecord.id;
+    var purchaseOrder = scriptContext.newRecord.id;//test2
     log.debug({title:'purchaseOrder',details:purchaseOrder})
     var type = scriptContext.newRecord.type;
     log.debug({title:'type',details:type})
