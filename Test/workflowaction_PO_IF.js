@@ -5,10 +5,10 @@
 /**
 * @NApiVersion 2.x
 * @NScriptType WorkflowActionScript
-* @NModuleScope SameAccount test
+* @NModuleScope SameAccount
 */
 define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], function(render, file, record, email,search,runtime){
-  function onAction(scriptContext){
+  function onAction(scriptContext){ //test
 
 
 
@@ -46,20 +46,3 @@ define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], fun
       return true;
     } else if (value === undefined) {
       return true;
-    } else if (value === '') {
-      return true;
-    } else if (value === ' ') {
-      return true;
-    } else if (value === 'null') {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-
-  return{
-    onAction: onAction
-  }
-});
-
