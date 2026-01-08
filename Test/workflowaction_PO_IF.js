@@ -9,8 +9,7 @@
 */
 define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], function(render, file, record, email,search,runtime){
   function onAction(scriptContext){
-
-
+//test one
     var purchaseOrder = scriptContext.newRecord.id;
     log.debug({title:'purchaseOrder',details:purchaseOrder})
     var type = scriptContext.newRecord.type;
@@ -45,19 +44,3 @@ define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], fun
     } else if (value === undefined) {
       return true;
     } else if (value === '') {
-      return true;
-    } else if (value === ' ') {
-      return true;
-    } else if (value === 'null') {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-
-  return{
-    onAction: onAction
-  }
-});
-
