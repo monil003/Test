@@ -9,7 +9,7 @@
 */
 define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], function(render, file, record, email,search,runtime){
   function onAction(scriptContext){
-//no more test
+//no more test123
     var purchaseOrder = scriptContext.newRecord.id;
     log.debug({title:'purchaseOrder',details:purchaseOrder})
     var type = scriptContext.newRecord.type;
