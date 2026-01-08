@@ -2,7 +2,6 @@
  * @version v1.0.1
  */
 
-
 /*
 ***********************************************************************
 *
@@ -27,6 +26,7 @@ define(['N/record','N/log','N/search', 'N/error','N/runtime','N/format'],
 function(record, log, search, error,runtime,format) {
   function afterSubmit(context) {
     
+    //test123
     log.debug({title:'context',details:context})
     var executioncontext;
     executioncontext = runtime.executionContext;
