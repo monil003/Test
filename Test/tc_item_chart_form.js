@@ -6,7 +6,7 @@
 define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
 
 
-    function beforeLoad(context) { //test2
+    function beforeLoad(context) { //test333
         try {
             if (context.type !== context.UserEventType.VIEW) return;
 
