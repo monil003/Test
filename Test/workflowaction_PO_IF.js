@@ -8,7 +8,7 @@
 * @NModuleScope SameAccount
 */
 define(['N/render', 'N/file', 'N/record', 'N/email','N/search','N/runtime'], function(render, file, record, email,search,runtime){
-  function onAction(scriptContext){
+  function onAction(scriptContext){ //test
 
 
 
