@@ -1,7 +1,10 @@
 /**
+ * @version v1.0.3
+ */
+
+/**
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
- * @version v1.0.3
  */
 define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
 
@@ -41,3 +44,40 @@ define(['N/ui/serverWidget', 'N/search'], function (serverWidget, search) {
         }
     }
 
+
+    function generateAssemblyHtml(inventoryData, soUsageData) {
+
+
+
+
+        const locations = Object.keys(inventoryData);
+        let inventoryArray = [];
+
+
+        //Convert object to array
+        const inventoryArrayIs = locations.forEach(function (locId) {
+
+
+            const row = inventoryData[locId];
+
+
+            inventoryArray.push({
+                locationId: row.locationId,
+                location: row.locationName,
+                onHand: row.onHand,
+                committed: row.committed,
+                available: row.available,
+                backOrdered: row.backordered
+            });
+        });
+
+
+        const defaultLocation = locations[0] || '';
+
+
+        const locationMap = buildLocationMap(locations);
+
+
+        const locationOptionsHtml = Object.keys(locationMap)
+            .map(function (id) {
+               return '<option value="' + id + '">' + locationMap[id] + '</option>';
