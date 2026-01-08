@@ -26,7 +26,7 @@ define(['N/record','N/log','N/search', 'N/error','N/runtime','N/format'],
 function(record, log, search, error,runtime,format) {
   function afterSubmit(context) {
     
-    //test123 test
+    //test123 test1
     log.debug({title:'context',details:context})
     var executioncontext;
     executioncontext = runtime.executionContext;
@@ -65,4 +65,3 @@ function(record, log, search, error,runtime,format) {
           Customer_Issue:17,
           Product_Sunset:18,
           Shipping_Issue:19
-        }
