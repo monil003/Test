@@ -9,7 +9,7 @@
 define(['N/record', 'N/log', 'N/search'], function (record, log, search) {
   function afterSubmit(context) {
     try {
-      // Ensure the script runs only on CREATE or EDIT test2
+      // Ensure the script runs only on CREATE or EDIT test3
       if (context.type === context.UserEventType.CREATE || context.type === context.UserEventType.EDIT) {
         var newRecord = context.newRecord;
         var recordId = newRecord.id;
