@@ -2,11 +2,6 @@
  * @version v1.0.1
  */
 
-        } catch (e) {
-            // avoid blocking UI
-            log.error('Custom Summary error', e);
-        }
-    }
 
 
     function money(n) {
@@ -36,7 +31,7 @@
               <td>
                 <div class="uir-field-wrapper" data-field-name="discounttotal">
                   <span class="smalltextnolink uir-label" style="font-size:10pt;">DISCOUNT ITEM</span>
-                  <span class="uir-field inputreadonly" style="float:right;">${money(t.discountTotal)}</span>
+                  <span class="uir-field inputreadonly" style="float:right;">${t.discountTotal ? money(t.discountTotal) : ''}</span>
                 </div>
               </td>
             </tr>
