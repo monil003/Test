@@ -2,6 +2,14 @@
  * @version v1.0.1
  */
 
+        } catch (e) {
+            // avoid blocking UI
+            log.error('Custom Summary error', e);
+        }
+    }
+
+
+    function money(n) {
         // simple formatting (keeps it safe for all locales)
         const x = Number(n || 0);
         const sign = x < 0 ? '-' : '';
@@ -49,7 +57,7 @@
                     Shipping Cost
                   </span>
                   <span class="uir-field inputreadonly" style="float:right;">
-                    ${money(t.shippingTotal || 0)}
+                    ${t.shippingTotal ? money(t.shippingTotal) : ''}
                   </span>
                 </div>
               </td>
