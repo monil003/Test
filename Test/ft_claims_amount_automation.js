@@ -2,69 +2,7 @@
  * @version v1.0.1
  */
 
-                    if (label.indexOf('paid claims') > -1) {
-                       paidL12 = num;
-                    } else if (label.indexOf('approved claims') > -1) {
-                       approvedL12 = num;
-                    }
-
-
-                    // ----- YTD (default) -----
-                } else {
-
-
-                    if (label.indexOf('paid claims') > -1) {
-                       paidVal = num;
-                    } else if (label.indexOf('approved claims') > -1) {
-                       approvedVal = num;
-                    } else if (label.indexOf('pending claims') > -1) {
-                       pendingVal = num;
-                    } else if (label.indexOf('denied claims') > -1) {
-                       deniedVal = num;
-                    }
-                }
-
-
-                // Match based on label text
-                // if (label.indexOf('paid claims') > -1) {
-                //     paidVal = num;
-                // } else if (label.indexOf('approved claims') > -1) {
-                //     approvedVal = num;
-                // } else if (label.indexOf('pending claims') > -1) {
-                //     pendingVal = num;
-                // } else if (label.indexOf('denied claims') > -1) {
-                //     deniedVal = num;
-                // }
-            }
-
-
-            data.push({
-                customerId: customerId,
-                paid:       paidVal,
-                approved:   approvedVal,
-                pending:    pendingVal,
-                denied:     deniedVal,
-                paidL12:     paidL12,
                 approvedL12: approvedL12
-            });
-
-
-            return true; // keep going
-        });
-
-
-        log.debug('getInputData', 'Prepared ' + data.length + ' customer rows from search.');
-        return data;
-    }
-
-
-    // ===================== MAP =====================
-    function map(context) {
-        var row = JSON.parse(context.value);
-
-
-        var customerId = row.customerId;
-        if (!customerId) {
             return;
         }
 
@@ -112,3 +50,52 @@
 
 
         } catch (e) {
+            log.error({
+                title: 'Error updating customer ' + customerId,
+                details: e
+            });
+            // let MR continue; no re-throw
+        }
+    }
+
+
+    // We don’t really need reduce for this use-case
+    function reduce(context) {}
+
+
+    // ===================== SUMMARIZE =====================
+    function summarize(summary) {
+        log.audit('Summary', {
+            usage: summary.usage,
+            yields: summary.yields,
+            concurrency: summary.concurrency
+        });
+
+
+        summary.mapSummary.errors.iterator().each(function (key, error) {
+            log.error('Map error for key ' + key, error);
+            return true;
+        });
+
+
+        summary.inputSummary.errors.iterator().each(function (key, error) {
+            log.error('Input error for key ' + key, error);
+            return true;
+        });
+
+
+        summary.reduceSummary.errors.iterator().each(function (key, error) {
+            log.error('Reduce error for key ' + key, error);
+            return true;
+        });
+    }
+
+
+    return {
+        getInputData: getInputData,
+        map:          map,
+        reduce:       reduce,
+        summarize:    summarize
+    };
+});
+
