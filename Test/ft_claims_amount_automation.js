@@ -2,102 +2,112 @@
  * @version v1.0.1
  */
 
-/**
- * @NApiVersion 2.1
- * @NScriptType MapReduceScript
- */
-define(['N/search', 'N/record', 'N/log'],
-function (search, record, log) {
-
-
-
-
-    // const SUPPORT_CASE_SEARCH_ID = 'customsearch_claim_paid_report';
-    const SUPPORT_CASE_SEARCH_ID = 'customsearch_claim_paid_report_3';
-
-
-    // ===================== GET INPUT DATA =====================
-    function getInputData() {
-        var data = [];
-
-
-        // Load your summary search on supportcase
-        var scSearch = search.load({
-            id: SUPPORT_CASE_SEARCH_ID
-        });
-
-
-        scSearch.run().each(function (result) {
-
-
-            // 1) Customer internal ID (GROUP on customer.internalid)
-            var customerId = result.getValue({
-                name: 'internalid',
-                join: 'customer',
-                summary: search.Summary.GROUP
-            });
-
-
-            if (!customerId) {
-                return true;
             }
 
 
-            // 2) Grab all "Cases - ..." summary columns
-            var cols = result.columns;
+            data.push({
+                customerId: customerId,
+                paid:       paidVal,
+                approved:   approvedVal,
+                pending:    pendingVal,
+                denied:     deniedVal,
+                paidL12:     paidL12,
+                approvedL12: approvedL12
+            });
 
 
-            var paidVal     = 0;
-            var approvedVal = 0;
-            var pendingVal  = 0;
-            var deniedVal   = 0;
-            var paidL12     = 0;
-            var approvedL12 = 0;
+            return true; // keep going
+        });
 
 
-            for (var i = 0; i < cols.length; i++) {
-                var col   = cols[i];
-                var label = (col.label || '').toLowerCase();
+        log.debug('getInputData', 'Prepared ' + data.length + ' customer rows from search.');
+        return data;
+    }
 
 
-                // We only care about the "Cases - ..." 
-                if (label.indexOf('cases') !== 0) {
-                    continue;
+    // ===================== MAP =====================
+    function map(context) {
+        var row = JSON.parse(context.value);
+
+
+        var customerId = row.customerId;
+        if (!customerId) {
+            return;
+        }
+
+
+        try {
+            record.submitFields({
+                type: record.Type.CUSTOMER,
+                id:   customerId,
+                values: {
+                    // Map “Cases - Paid Claims – YTD” → custentity_ft_paid_claims_ytd
+                    custentity_ft_paid_claims_ytd:        row.paid,
+
+
+                    // Map “Cases - Approved Claims – YTD” → custentity_ft_approved_claims_ytd
+                    custentity_ft_approved_claims_ytd:    row.approved,
+
+
+                    // Map “Cases - Pending Claims” → custentity_ft_pending_claims
+                    custentity_ft_pending_claims:         row.pending,
+
+
+                    // Map “Cases - Denied Claims” → custentity_ft_denied_claims
+                    custentity_ft_denied_claims:          row.denied,
+
+
+                    custentity_ft_approved_claims_l12m: row.approvedL12,
+                    custentity_ft_paid_invoices_l12m: row.paidL12,
+                },
+                options: {
+                    enableSourcing: false,
+                    ignoreMandatoryFields: true
                 }
+            });
 
 
-                var raw = result.getValue(col);
-                var num = Number(raw || 0) || 0;
+            log.audit({
+                title: 'Customer updated',
+                details:
+                    'Customer: ' + customerId +
+                    ' | Paid='     + row.paid +
+                    ' | Approved=' + row.approved +
+                    ' | Pending='  + row.pending +
+                    ' | Denied='   + row.denied + 
+                    ' | ApprovedL12='   + row.approvedL12 + 
+                    ' | PaidL12='   + row.paidL12
+            });
 
 
-                if (label.indexOf('l12') > -1 || label.indexOf('last 12') > -1) {
+        } catch (e) {
+            log.error({
+                title: 'Error updating customer ' + customerId,
+                details: e
+            });
+            // let MR continue; no re-throw
+        }
+    }
 
 
-                    if (label.indexOf('paid claims') > -1) {
-                       paidL12 = num;
-                    } else if (label.indexOf('approved claims') > -1) {
-                       approvedL12 = num;
-                    }
+    // We don’t really need reduce for this use-case
+    function reduce(context) {}
 
 
-                    // ----- YTD (default) -----
-                } else {
+    // ===================== SUMMARIZE =====================
+    function summarize(summary) {
+        log.audit('Summary', {
+            usage: summary.usage,
+            yields: summary.yields,
+            concurrency: summary.concurrency
+        });
 
 
-                    if (label.indexOf('paid claims') > -1) {
-                       paidVal = num;
-                    } else if (label.indexOf('approved claims') > -1) {
-                       approvedVal = num;
-                    } else if (label.indexOf('pending claims') > -1) {
-                       pendingVal = num;
-                    } else if (label.indexOf('denied claims') > -1) {
-                       deniedVal = num;
-                    }
-                }
+        summary.mapSummary.errors.iterator().each(function (key, error) {
+            log.error('Map error for key ' + key, error);
+            return true;
+        });
 
 
-                // Match based on label text
-                // if (label.indexOf('paid claims') > -1) {
-                //     paidVal = num;
-                // } else if (label.indexOf('approved claims') > -1) {
-                //     approvedVal = num;
+        summary.inputSummary.errors.iterator().each(function (key, error) {
+            log.error('Input error for key ' + key, error);
