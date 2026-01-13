@@ -1,46 +1,106 @@
 /**
- * @NApiVersion 2.1
- * @NScriptType UserEventScript
  * @version v1.0.1
  */
-define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) => {
+
+            fxUnApplied = parseFloat(r.getValue('fxamount')) || 0;
+            return false;
+        });
 
 
-    const afterSubmit = (context) => {
-        try {
-            var rec = context.newRecord;
-            var oldRec = context.oldRecord;
-            const recId = rec.id;
-            const recType = rec.type;
-            var deleteFlag = false;
+        // Calculate values
+        const openAmtForeign = fxRemaining;
+        const openAmtBase = openAmtForeign * exchangeRate;
 
 
-            if (context.type === context.UserEventType.DELETE) {
-                rec = context.oldRecord;
-                deleteFlag = true;
+        // Save results
+        record.submitFields({
+            type: recType,
+            id: recId,
+            values: {
+                custbody_bpc_tm_open_amount_foreign: openAmtForeign,
+                custbody_bpc_tm_open_amount_base: openAmtBase
+            },
+            options: { enableSourcing: false, ignoreMandatoryFields: true }
+        });
+
+
+        return {
+            fxRemaining,
+            baseRemaining,
+            fxUnApplied,
+            exchangeRate
+        };
+    }
+
+
+    // ------------------------------------------------------------------
+    // HELPER: Find Vendor Bill which have applied Credits in last 10 min
+    // ------------------------------------------------------------------
+    function processVendorBillsWithCredits() {
+        const vendorbillSearchObj = search.create({
+            type: "vendorbill",
+            settings:[{"name":"consolidationtype","value":"ACCTTYPE"}],
+            filters: [
+               ["type","anyof","VendBill"], 
+               "AND", 
+               ["applyingtransaction","noneof","@NONE@"], 
+               "AND", 
+               ["applyingtransaction.type","anyof","VendCred"], 
+               // "AND", 
+               // ["status","anyof","VendBill:B"], 
+               "AND", 
+               ["applyingtransaction.linelastmodifieddate","notbefore","minutesago0","minutesago10"]
+               // ["applyingtransaction.linelastmodifieddate","within","today"]
+            ],
+            columns: [
+               search.createColumn({name: "tranid", label: "Document Number"}),
+               search.createColumn({name: "applyingtransaction", label: "Applying Transaction"}),
+               search.createColumn({
+                  name: "trandate",
+                  join: "applyingTransaction",
+                  label: "Date"
+               }),
+               search.createColumn({
+                  name: "internalid",
+                  join: "applyingTransaction",
+                  label: "Internal ID"
+               })
+            ]
+        });
+
+
+        vendorbillSearchObj.run().each(function(result){
+            const billId = result.id;
+            var billIds = [];
+            var creditIds = [];
+          
+            if (billId) {
+                log.debug('Processing Bill', billId);
+                billIds.push(billId);
+                getOpenAmountsForRecord(record.Type.VENDOR_BILL, billId);
             }
 
 
-            log.debug("After Submit Triggered", { recType, recId });
+            const creditId = result.getValue({
+              name: "internalid",
+              join: "applyingTransaction"
+            });
 
 
-            try {
+            if (creditId) {
+              log.debug("Updating Bill Credit", creditId);
+              creditIds.push(creditId);
 
 
-                if (recId == '0' && recType == 'vendorpayment') {
-                    log.debug('Full credit apply case');
-
-
-                    processVendorBillsWithCredits();
-
-
-                    return;
-                }
-
-
-            } catch (error) {
-                log.debug('error', error);
+              getOpenAmountsForRecord(record.Type.VENDOR_CREDIT, creditId);
             }
+          
+            return {
+               billIds: billIds,
+               creditIds: creditIds
+            };
+        });
+    }
 
 
-            let openAmtForeign = 0;
+    }
