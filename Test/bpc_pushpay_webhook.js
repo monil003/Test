@@ -11,6 +11,12 @@ define(['N/log', 'N/record'], (log, record) => {
 
     const onRequest = (context) => {
         log.debug('here inn', context);
+
+
+        if (context.request.method !== 'GET') {
+          log.debug('in get request', context);
+        }
+      
         if (context.request.method !== 'POST') {
             context.response.write('Method Not Allowed');
             return;
