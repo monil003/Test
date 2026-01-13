@@ -18,9 +18,13 @@ define(['N/log', 'N/record'], (log, record) => {
         }
       
         if (context.request.method !== 'POST') {
+            log.debug('in post');
             context.response.write('Method Not Allowed');
             return;
         }
+
+
+        log.debug('innn');
 
 
         // Validate shared secret
