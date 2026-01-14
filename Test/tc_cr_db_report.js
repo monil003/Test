@@ -54,17 +54,13 @@ function suitelet(request, response) {
         );
 
         var start = 0;
-        var end = 10;
+        var batchSize = 1000;
         var line = 1;
 
-        nlapiLogExecution(
-           'DEBUG',
-           'Fetching Results',
-           'Start: ' + start + ', End: ' + end
-        );
-
         do {
-            var results = resultSet.getResults(start, end);
+            var results = resultSet.getResults(start, start + batchSize);
+
+            nlapiLogExecution('DEBUG', 'Batch', 'Start: ' + start + ', Fetched: ' + (results ? results.length : 0));
 
             if (!results || results.length === 0) {
                 break;
@@ -93,38 +89,20 @@ function suitelet(request, response) {
                 sublist.setLineItemValue('memo', line, result.getValue('memo'));
 
                 line++;
+
+                // Prevent exceeding 1000 lines in sublist
+                if (line > 1000) {
+                    nlapiLogExecution('AUDIT', 'Limit reached', 'Max 1000 lines per sublist');
+                    break;
+                }
             }
 
-            start = end;
-            end += 1000;
+            start += batchSize;
+
+            // Stop if we reached sublist limit
+            if (line > 1000) break;
 
         } while (true);
-
-        // var line = 1;
-
-        // resultSet.forEachResult(function (result) {
-
-        //     sublist.setLineItemValue('date', line, result.getValue('trandate'));
-        //     sublist.setLineItemValue('type', line, result.getText('type'));
-        //     sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
-        //     sublist.setLineItemValue('account', line, result.getText('account'));
-
-        //     var debit = result.getValue('debitamount');
-        //     var credit = result.getValue('creditamount');
-
-        //     if (debit && debit !== '0.00') {
-        //         sublist.setLineItemValue('debit', line, debit);
-        //     }
-        //     if (credit && credit !== '0.00') {
-        //         sublist.setLineItemValue('credit', line, credit);
-        //     }
-
-        //     sublist.setLineItemValue('entity', line, result.getText('entity'));
-        //     sublist.setLineItemValue('memo', line, result.getValue('memo'));
-
-        //     line++;
-        //     return true;
-        // });
 
         response.writePage(form);
     }
