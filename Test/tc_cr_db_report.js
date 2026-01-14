@@ -76,8 +76,8 @@ function suitelet(request, response) {
                 // Set drilldown URL
                 var drillUrl = nlapiResolveURL(
                     'SUITELET',
-                    'customscript_subaccount_drilldown',   // Script ID of your drilldown Suitelet
-                    'customdeploy_subaccount_drilldown',   // Deployment ID of your drilldown Suitelet
+                    'customscript_tc_credit_debit_report',   
+                    'customdeploy_tc_credit_debit_report',   
                     false
                 ) + '&tranid=' + encodeURIComponent(result.getValue('tranid'));
 
