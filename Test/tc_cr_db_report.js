@@ -41,31 +41,71 @@ function suitelet(request, response) {
         var search = nlapiCreateSearch('transaction', filters, columns);
         var resultSet = search.runSearch();
 
+        var start = 0;
+        var end = 1000;
         var line = 1;
 
-        resultSet.forEachResult(function (result) {
+        do {
+            var results = resultSet.getResults(start, end);
 
-            sublist.setLineItemValue('date', line, result.getValue('trandate'));
-            sublist.setLineItemValue('type', line, result.getText('type'));
-            sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
-            sublist.setLineItemValue('account', line, result.getText('account'));
-
-            var debit = result.getValue('debitamount');
-            var credit = result.getValue('creditamount');
-
-            if (debit && debit !== '0.00') {
-                sublist.setLineItemValue('debit', line, debit);
-            }
-            if (credit && credit !== '0.00') {
-                sublist.setLineItemValue('credit', line, credit);
+            if (!results || results.length === 0) {
+                break;
             }
 
-            sublist.setLineItemValue('entity', line, result.getText('entity'));
-            sublist.setLineItemValue('memo', line, result.getValue('memo'));
+            for (var i = 0; i < results.length; i++) {
+                var result = results[i];
 
-            line++;
-            return true;
-        });
+                sublist.setLineItemValue('date', line, result.getValue('trandate'));
+                sublist.setLineItemValue('type', line, result.getText('type'));
+                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
+                sublist.setLineItemValue('account', line, result.getText('account'));
+
+                var debit = result.getValue('debitamount');
+                var credit = result.getValue('creditamount');
+
+                if (debit && debit !== '0.00') {
+                    sublist.setLineItemValue('debit', line, debit);
+                }
+                if (credit && credit !== '0.00') {
+                    sublist.setLineItemValue('credit', line, credit);
+                }
+
+                sublist.setLineItemValue('entity', line, result.getText('entity'));
+                sublist.setLineItemValue('memo', result.getValue('memo'));
+
+                line++;
+            }
+
+            start = end;
+            end += 1000;
+
+        } while (true);
+
+        // var line = 1;
+
+        // resultSet.forEachResult(function (result) {
+
+        //     sublist.setLineItemValue('date', line, result.getValue('trandate'));
+        //     sublist.setLineItemValue('type', line, result.getText('type'));
+        //     sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
+        //     sublist.setLineItemValue('account', line, result.getText('account'));
+
+        //     var debit = result.getValue('debitamount');
+        //     var credit = result.getValue('creditamount');
+
+        //     if (debit && debit !== '0.00') {
+        //         sublist.setLineItemValue('debit', line, debit);
+        //     }
+        //     if (credit && credit !== '0.00') {
+        //         sublist.setLineItemValue('credit', line, credit);
+        //     }
+
+        //     sublist.setLineItemValue('entity', line, result.getText('entity'));
+        //     sublist.setLineItemValue('memo', line, result.getValue('memo'));
+
+        //     line++;
+        //     return true;
+        // });
 
         response.writePage(form);
     }
