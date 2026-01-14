@@ -1,5 +1,5 @@
 /**
- * @version v1.0.1
+ * @version v1.0.2
  */
 
 /**
@@ -21,6 +21,8 @@ function suitelet(request, response) {
         sublist.addField('credit', 'currency', 'Credit');
         sublist.addField('entity', 'text', 'Entity');
         sublist.addField('memo', 'text', 'Memo');
+        var drillField = sublist.addField('subaccount_details', 'url', 'Subaccount Details');
+        drillField.setLinkText('View Subaccounts');
 
         const oneYearAgo = getOneYearAgoDate();
 
