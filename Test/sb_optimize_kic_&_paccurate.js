@@ -2,87 +2,46 @@
  * @version v1.0.1
  */
 
+/**
+ * @NApiVersion 2.1
+ * @NScriptType UserEventScript
+ */
+define(['N/https', 'N/log', 'N/record', 'N/search', 'N/runtime'], (https, log, record, search, runtime) => {
 
 
-    // ---------- KeepItCool integration (uses saved search to build shipments) ----------
-    function processKeepItCoolIntegration(context) {
+    const KEEP_IT_COOL_BASE_URL = 'https://api.keepit.cool/v1/shipments/';
+    const KEEP_IT_COOL_AUTH = 'Api-Key JfSYGoYN.79w4RQfYng0vPJUJ8GlWnl58RT5ISxMS';
+    const DRY_ICE_ITEM_ID = 13528;
+    const DISTRIBUTION_CENTER_ID = '372e08c3-86fe-4357-8ae3-c70a64b281b2';
+    const NEXT_DAY_SHIPPING_METHOD = '2d173359-3e6f-49be-afaf-d15a17e47d4c';
+    const UPS_SHIPPING_METHOD = '2839e6bc-c2d1-4f75-956d-f03f3ef44ab4';
+    const UPS_NEXT_DAY_SHIPPING_METHOD = 'a65ce665-f7d2-47fd-bf0a-fd603d5d87cd';
+    const OKC_FC_LOCATION = 4;
+    const PA_LOCATION = 2;
+    const PACCURATE_API_URL = 'https://api.paccurate.io';
+    const PACCURATE_API_KEY = 'apikey 14KYiBm6lxWXVf1NNxrziggwPHcttkQ352bMI6-HMOzVvLPGSSfBlVcQxycR96Yu';
+    const PETCO_CUSTOMER_ID = 322186;
+
+
+    const afterSubmit = (context) => {
         try {
-            if (context.type !== context.UserEventType.CREATE &&
-                context.type !== context.UserEventType.EDIT) {
+            if (context.type === context.UserEventType.DELETE) return;
+
+
+            const soId = context.newRecord.id;
+
+
+            const soRec = record.load({ type: record.Type.SALES_ORDER, id: soId, isDynamic: true });
+
+
+            const customerId = soRec.getValue({ fieldId: 'entity' });
+
+
+            if (customerId == PETCO_CUSTOMER_ID) {
+                log.debug('Skipping script', 'Petco customer detected');
                 return;
             }
 
 
-            const soId = context.newRecord.id;
-            log.debug('soId', soId)
-            // ---- Build payload using saved search ----
-            const salesorderSearchObj = search.create({
-                type: "salesorder",
-                settings: [{ name: "consolidationtype", value: "ACCTTYPE" }],
-                filters: [
-                    ["type", "anyof", "SalesOrd"],
-                    "AND",
-                    ["internalid", "anyof", soId],
-                    "AND",
-                    ["mainline", "is", "F"],
-                    "AND",
-                    ["taxline", "is", "F"],
-                    "AND",
-                    ["shipping", "is", "F"],
-                    "AND",
-                    ["item.type", "anyof", "InvtPart"],
-                    "AND",
-                    ["item.custitem_ollie_frozen_item", "is", "T"]
-                ],
-                columns: [
-                    search.createColumn({ name: "tranid" }),
-                    search.createColumn({ name: "shipzip" }),
-                    search.createColumn({ name: "shipdate" }),
-                    search.createColumn({ name: "quantity" }),
-                    search.createColumn({ name: "shipmethod" }),
-                    search.createColumn({ name: "custbody_mhi_op_planshipdate" }),
-                    search.createColumn({ name: "custbody_mhi_op_daysintransit" }),
-                    search.createColumn({
-                        name: "formulatext",
-                        formula: "LTRIM(SUBSTR({item}, INSTR({item}, ':') + 1))"
-                    })
-                ]
-            });
-            log.debug('salesorderSearchObj', salesorderSearchObj)
-            var searchResultCount = salesorderSearchObj.runPaged().count;
-            log.debug('searchResultCount', searchResultCount)
-
-
-            let shipments = [];
-
-
-            salesorderSearchObj.run().each(result => {
-                let orderNum = result.getValue("tranid") || "";
-                if (orderNum) orderNum = String(orderNum).split('.')[0];
-
-
-                const shipZip = result.getValue("shipzip") || "";
-                const shipDateValue = result.getValue("custbody_mhi_op_planshipdate");
-
-
-                const planShipDate = result.getValue("custbody_mhi_op_planshipdate");
-                const daysInTransit = result.getValue("custbody_mhi_op_daysintransit") || 0;
-
-
-                let shipDate = "";
-                if (shipDateValue) {
-                    const dateObj = new Date(shipDateValue);
-                    const year = dateObj.getFullYear();
-                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                    const day = String(dateObj.getDate()).padStart(2, '0');
-                    shipDate = `${year}-${month}-${day}`;
-                }
-
-
-                var expectedShipDate = '';
-
-
-                if (planShipDate) {
-                    var planDateObj = new Date(planShipDate);
-                    const daysToAdd = parseInt(daysInTransit, 10) || 0;
-
+            var DryIceQtyFromKIC = 0;
+            // If OKC location and no package_type, call KeepItCool to populate package type and potentially add dry ice
