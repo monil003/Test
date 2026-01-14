@@ -50,7 +50,7 @@ function suitelet(request, response) {
         nlapiLogExecution(
            'DEBUG',
            'Fetching Results',
-           resultSet
+           search
         );
 
         var start = 0;
