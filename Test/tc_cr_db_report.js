@@ -19,8 +19,6 @@ function suitelet(request, response) {
     if (drillAccountId) {
         // ===== SUBACCOUNT REPORT =====
         form.setTitle('Subaccount Report');
-
-        // Back button
         form.addButton('custpage_back', 'Back', 'window.location.href="' +
             nlapiResolveURL('SUITELET', 'customscript_tc_credit_debit_report', 'customdeploy_tc_credit_debit_report') + '"');
 
@@ -92,7 +90,7 @@ function suitelet(request, response) {
         // ===== MAIN REPORT =====
         form.setTitle('Last 12 Months Debit & Credit Report');
 
-        // Get unique accounts manually
+        // === GET UNIQUE ACCOUNTS ===
         var accountFilters = [
             new nlobjSearchFilter('posting', null, 'is', 'T'),
             new nlobjSearchFilter('trandate', null, 'onorafter', getOneYearAgoDate())
@@ -103,13 +101,13 @@ function suitelet(request, response) {
         var accountSearch = nlapiCreateSearch('transaction', accountFilters, accountColumns);
         var accountResultSet = accountSearch.runSearch();
 
-        var start = 0;
+        var startAccounts = 0;
         var batchSize = 1000;
         var accountResults;
         var accountMap = {};
 
         do {
-            accountResults = accountResultSet.getResults(start, start + batchSize);
+            accountResults = accountResultSet.getResults(startAccounts, startAccounts + batchSize);
             if (!accountResults || accountResults.length === 0) break;
 
             for (var i = 0; i < accountResults.length; i++) {
@@ -118,20 +116,17 @@ function suitelet(request, response) {
                 if (!accountMap[accId]) accountMap[accId] = accName;
             }
 
-            start += batchSize;
+            startAccounts += batchSize;
         } while (accountResults && accountResults.length > 0);
 
-        // Add account dropdown
+        // Add dropdown
         var accountSelect = form.addField('custpage_account_filter', 'select', 'Drill Down by Account');
         accountSelect.addSelectOption('', 'Select an account');
-
-        for (var id in accountMap) {
-            accountSelect.addSelectOption(id, accountMap[id]);
-        }
+        for (var id in accountMap) accountSelect.addSelectOption(id, accountMap[id]);
 
         form.addSubmitButton('View Subaccounts');
 
-        // Main sublist
+        // === MAIN TRANSACTION SUBLIST ===
         var sublist = form.addSubList('custpage_report', 'list', 'Report');
         sublist.addField('date', 'date', 'Date');
         sublist.addField('type', 'text', 'Type');
@@ -143,8 +138,6 @@ function suitelet(request, response) {
         sublist.addField('memo', 'text', 'Memo');
 
         // Fetch transactions
-        start = 0;
-        line = 1;
         var transactionSearch = nlapiCreateSearch('transaction', accountFilters, [
             new nlobjSearchColumn('trandate'),
             new nlobjSearchColumn('type'),
@@ -156,14 +149,17 @@ function suitelet(request, response) {
             new nlobjSearchColumn('memo')
         ]);
         var transactionResultSet = transactionSearch.runSearch();
-        var results;
+
+        var startTrans = 0;
+        var line = 1;
+        var transResults;
 
         do {
-            results = transactionResultSet.getResults(start, start + batchSize);
-            if (!results || results.length === 0) break;
+            transResults = transactionResultSet.getResults(startTrans, startTrans + batchSize);
+            if (!transResults || transResults.length === 0) break;
 
-            for (var i = 0; i < results.length; i++) {
-                var r = results[i];
+            for (var i = 0; i < transResults.length; i++) {
+                var r = transResults[i];
 
                 sublist.setLineItemValue('date', line, r.getValue('trandate'));
                 sublist.setLineItemValue('type', line, r.getText('type'));
@@ -183,9 +179,9 @@ function suitelet(request, response) {
                 if (line > 1000) break;
             }
 
-            start += batchSize;
+            startTrans += batchSize;
             if (line > 1000) break;
-        } while (results && results.length > 0);
+        } while (transResults && transResults.length > 0);
     }
 
     response.writePage(form);
