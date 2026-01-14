@@ -22,9 +22,11 @@ function suitelet(request, response) {
         sublist.addField('entity', 'text', 'Entity');
         sublist.addField('memo', 'text', 'Memo');
 
+        const oneYearAgo = getOneYearAgoDate();
+
         var filters = [];
         filters.push(new nlobjSearchFilter('posting', null, 'is', 'T'));
-        filters.push(new nlobjSearchFilter('trandate', null, 'onorafter', 'oneyearago'));
+        filters.push(new nlobjSearchFilter('trandate', null, 'onorafter', oneYearAgo));
 
         var columns = [];
         columns.push(new nlobjSearchColumn('trandate'));
@@ -66,5 +68,12 @@ function suitelet(request, response) {
         });
 
         response.writePage(form);
+    }
+
+    function getOneYearAgoDate() {
+        var d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+
+        return nlapiDateToString(d); // returns M/d/yy
     }
 }
