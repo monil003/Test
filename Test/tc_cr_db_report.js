@@ -42,7 +42,7 @@ function suitelet(request, response) {
         var resultSet = search.runSearch();
 
         var start = 0;
-        var end = 1000;
+        var end = 10;
         var line = 1;
 
         do {
