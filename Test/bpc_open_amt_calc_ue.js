@@ -1,117 +1,153 @@
 /**
- * @version v1.0.1
+ * @version v1.0.3
  */
 
-                      }
-                    }
+        searchObj.run().each(function (result) {
+            var invId = result.getValue({
+                name: "internalid",
+                join: "CUSTRECORD_BPC_TM_INVOICE"
+            });
 
 
-                    if (recType == 'customrecord_bpc_tm_cust_paymt') {
-                      const relatedPaymentId = rec.getValue('custrecord_bpc_tm_pymt');
-                      const relatedInvoiceId = rec.getValue('custrecord_bpc_tm_invoice');
+            if (invId) {
+                invoiceSet.add(invId);
+            }
+            return true;
+        });
 
 
-                      if (relatedPaymentId) related.push(relatedPaymentId);
-                      if (relatedInvoiceId) related.push(relatedInvoiceId);
-                    }
+        return Array.from(invoiceSet);
+    }
 
 
-                    if (recType == 'vendorprepaymentapplication') {
-                      const vendorPrePaymentId = rec.getValue('vendorprepayment');
-                      log.debug('vendorPrePaymentId', vendorPrePaymentId);
-                      related.push(vendorPrePaymentId);
-                    }
+    function getRecentlyModifiedInvoices(applyingTransactionId) {
+        var invoiceSet = new Set();
 
 
-                    if (recType == 'vendorpayment' || recType == 'vendorcredit' || recType == 'creditmemo') {
-                        const recentlyUpdatedSublist = detectApplyAmountChanges(oldRec, rec);
+        var invoiceSearchObj = search.create({
+            type: "invoice",
+            settings: [
+                { "name": "consolidationtype", "value": "ACCTTYPE" }
+            ],
+            filters: [
+                ["type", "anyof", "CustInvc"],
+                "AND",
+                ["linelastmodifieddate", "notbefore", "minutesago1"]
+            ],
+            columns: [
+                search.createColumn({ name: "internalid" }),
+                search.createColumn({ name: "tranid" }),
+                search.createColumn({
+                    name: "linelastmodifieddate",
+                    join: "applyingTransaction"
+                })
+            ]
+        });
 
 
-                        if (recentlyUpdatedSublist && recentlyUpdatedSublist.length > 0) {
-                            related = related.concat(recentlyUpdatedBillCreidtIds);
+        invoiceSearchObj.run().each(function (result) {
+            var invId = result.getValue({ name: "internalid" });
+            if (invId) {
+                invoiceSet.add(invId);
+            }
+            return true;
+        });
 
 
-                            // Remove duplicates
-                            related = Array.from(new Set(related));
-                        }
-                    }
+        return Array.from(invoiceSet);
+    }
 
 
-                    if (related.length > 0) {
-                        log.debug("Processing Related Transactions", related);
+    function detectApplyAmountChanges(oldRec, newRec) {
+        try {
+            const changes = [];
+            const changeInvoiceIds = [];
 
 
-                        if (related.length > 50) {
-                           const taskObj = task.create({
-                            taskType: task.TaskType.MAP_REDUCE
-                           });
-                           
-                          taskObj.scriptId = 'customscript_bpc_trigger_open_amount_mr';
-                          taskObj.deploymentId = 'customdeploy_bpc_trigger_open_amount_mr';
+            const lineCount = newRec.getLineCount({ sublistId: 'apply' });
 
 
-                          taskObj.params = {
-                            custscript_related_ids: JSON.stringify(related)
-                          };
+            for (let i = 0; i < lineCount; i++) {
 
 
-                          const taskId = taskObj.submit();
-                          log.debug("Map/Reduce Triggered", taskId); 
+                const invoiceId = newRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'internalid',
+                    line: i
+                });
 
 
-                          return;
-                        }
+                if (!invoiceId) continue;
 
 
-                        related.forEach(id => {
-                            try {
-                                // Detect record type of related transaction
-                                const relatedType = getTransactionType(id);
-                                if (!relatedType) {
-                                    log.error("Unable to detect related type", id);
-                                    return;
-                                }
+                // Applied flag (old and new)
+                const oldApplied = oldRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'apply',
+                    line: i
+                }) === true || oldRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'apply',
+                    line: i
+                }) === 'T';
 
 
-                                getOpenAmountsForRecord(relatedType, id);
+                const newApplied = newRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'apply',
+                    line: i
+                }) === true || newRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'apply',
+                    line: i
+                }) === 'T';
 
 
-                            } catch (err) {
-                                log.error("Failed updating related record: " + id, err);
-                            }
-                        });
-                    }
+                // Amounts (old & new)
+                const oldAmount = parseFloat(oldRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'amount',
+                    line: i
+                })) || 0;
 
 
-                } catch (e) {
-                    log.error("Error Updating Related Transactions", e);
+                const newAmount = parseFloat(newRec.getSublistValue({
+                    sublistId: 'apply',
+                    fieldId: 'amount',
+                    line: i
+                })) || 0;
+
+
+                // NEW LOGIC:
+                // Capture only rows where something actually changed
+                const amountChanged = oldAmount !== newAmount;
+                const appliedChanged = oldApplied !== newApplied;
+
+
+                if (amountChanged || appliedChanged) {
+                    changes.push({
+                        invoiceId,
+                        oldApplied,
+                        newApplied,
+                        oldAmount,
+                        newAmount
+                    });
+                    changeInvoiceIds.push(invoiceId);
                 }
             }
 
 
-            log.debug("Fields Updated Successfully");
+            log.debug('changes', changes);
+            log.debug('changeInvoiceIds', changeInvoiceIds);
 
 
-        } catch (err) {
-            log.error("Error in After Submit", err);
+            return changeInvoiceIds;
+        } catch (error) {
+            log.debug('Fail to detect unapplied');
         }
-    };
+    }
 
 
-    // ---------------------------------------------------------
-    // HELPER: Fetch related applied transactions
-    // ---------------------------------------------------------
-    function getAppliedOrApplyingTransactions(rec) {
-        const relatedIds = [];
-        const applySublistId = "apply";
-        const applyBillSublistId = "bill";
-        const applyCreditSublistId = "credit";
-        const applyDepositedSublistId = "deposit";
+    return { afterSubmit };
+});
 
-
-        const lineCount = rec.getLineCount({ sublistId: applySublistId });
-        const billLineCount = rec.getLineCount({ sublistId: applyBillSublistId });
-
-
-        const creditLineCount = rec.getLineCount({ sublistId: applyCreditSublistId });
-            log.debug('error in detecting apply amount changes');
