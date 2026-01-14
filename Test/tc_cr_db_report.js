@@ -104,17 +104,36 @@ function suitelet(request, response) {
         ];
 
         var columns = [
-            new nlobjSearchColumn('account').setGroup(true), // unique accounts
+            new nlobjSearchColumn('account'), // unique accounts
         ];
 
         var search = nlapiCreateSearch('transaction', filters, columns);
         var resultSet = search.runSearch();
         var accounts = resultSet.getResults(0, 1000); // max 1000 unique accounts
+        var results;
+        var accountMap = {}; // key = accountId, value = accountName
 
-        for (var i = 0; i < accounts.length; i++) {
-            var accountId = accounts[i].getValue('account');
-            var accountName = accounts[i].getText('account');
-            accountSelect.addSelectOption(accountId, accountName);
+        do {
+            results = resultSet.getResults(start, start + batchSize);
+            if (!results || results.length === 0) break;
+
+            for (var i = 0; i < results.length; i++) {
+                var accountId = results[i].getValue('account');
+                var accountName = results[i].getText('account');
+                if (!accountMap[accountId]) {
+                    accountMap[accountId] = accountName; // add only if not exists
+                }
+            }
+
+            start += batchSize;
+        } while (results && results.length > 0);
+
+        // Now populate dropdown
+        var accountSelect = form.addField('custpage_account_filter', 'select', 'Drill Down by Account');
+        accountSelect.addSelectOption('', 'Select an account');
+
+        for (var id in accountMap) {
+            accountSelect.addSelectOption(id, accountMap[id]);
         }
 
         form.addSubmitButton('View Subaccounts');
