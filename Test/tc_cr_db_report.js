@@ -12,6 +12,13 @@ function suitelet(request, response) {
 
         var form = nlapiCreateForm('Last 12 Months Debit & Credit Report');
 
+        var drillAccountId = request.getParameter('accountid');
+
+        if (drillAccountId) {
+          // Show subaccount report
+          showSubaccountReport(drillAccountId, form);
+        }
+
         var sublist = form.addSubList('custpage_report', 'list', 'Report');
         sublist.addField('date', 'date', 'Date');
         sublist.addField('type', 'text', 'Type');
@@ -69,10 +76,18 @@ function suitelet(request, response) {
             for (var i = 0; i < results.length; i++) {
                 var result = results[i];
 
+                var accountId = result.getValue('account'); // internal ID
+                var accountName = result.getText('account');
+
+                // Create clickable link for drilldown
+                var drillUrl = nlapiResolveURL('SUITELET', 'customscript_tc_credit_debit_report', 'customdeploy_tc_credit_debit_report') +
+               '&accountid=' + accountId;
+
                 sublist.setLineItemValue('date', line, result.getValue('trandate'));
                 sublist.setLineItemValue('type', line, result.getText('type'));
                 sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
                 sublist.setLineItemValue('account', line, result.getText('account'));
+                sublist.setLineItemLink('account', line, drillUrl);
 
                 var debit = result.getValue('debitamount');
                 var credit = result.getValue('creditamount');
@@ -112,5 +127,72 @@ function suitelet(request, response) {
         d.setFullYear(d.getFullYear() - 1);
 
         return nlapiDateToString(d); // returns M/d/yy
+    }
+
+    function showSubaccountReport(parentAccountId, form) {
+
+        form.setTitle('Subaccount Report for Account ID: ' + parentAccountId);
+
+        var sublist = form.addSubList('custpage_subreport', 'list', 'Subaccount Report');
+        sublist.addField('date', 'date', 'Date');
+        sublist.addField('type', 'text', 'Type');
+        sublist.addField('tranid', 'text', 'Tran ID');
+        sublist.addField('subaccount', 'text', 'Subaccount');
+        sublist.addField('debit', 'currency', 'Debit');
+        sublist.addField('credit', 'currency', 'Credit');
+        sublist.addField('entity', 'text', 'Entity');
+        sublist.addField('memo', 'text', 'Memo');
+
+        var filters = [];
+        filters.push(new nlobjSearchFilter('posting', null, 'is', 'T'));
+        filters.push(new nlobjSearchFilter('trandate', null, 'onorafter', getOneYearAgoDate()));
+        filters.push(new nlobjSearchFilter('account', null, 'anyof', parentAccountId)); // only subaccounts of this account
+
+        var columns = [];
+        columns.push(new nlobjSearchColumn('trandate'));
+        columns.push(new nlobjSearchColumn('type'));
+        columns.push(new nlobjSearchColumn('tranid'));
+        columns.push(new nlobjSearchColumn('account')); // this will show subaccount name
+        columns.push(new nlobjSearchColumn('debitamount'));
+        columns.push(new nlobjSearchColumn('creditamount'));
+        columns.push(new nlobjSearchColumn('entity'));
+        columns.push(new nlobjSearchColumn('memo'));
+
+        var search = nlapiCreateSearch('transaction', filters, columns);
+        var resultSet = search.runSearch();
+
+        var line = 1;
+        var start = 0;
+        var batchSize = 1000;
+
+        do {
+            var results = resultSet.getResults(start, start + batchSize);
+            if (!results || results.length === 0) break;
+
+            for (var i = 0; i < results.length; i++) {
+                var result = results[i];
+
+                sublist.setLineItemValue('date', line, result.getValue('trandate'));
+                sublist.setLineItemValue('type', line, result.getText('type'));
+                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
+                sublist.setLineItemValue('subaccount', line, result.getText('account'));
+
+                var debit = result.getValue('debitamount');
+                var credit = result.getValue('creditamount');
+
+                if (debit && debit !== '0.00') sublist.setLineItemValue('debit', line, debit);
+                if (credit && credit !== '0.00') sublist.setLineItemValue('credit', line, credit);
+
+                sublist.setLineItemValue('entity', line, result.getText('entity'));
+                sublist.setLineItemValue('memo', line, result.getValue('memo'));
+
+                line++;
+                if (line > 1000) break; // max lines
+            }
+
+            start += batchSize;
+            if (line > 1000) break;
+
+        } while (true);
     }
 }
