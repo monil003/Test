@@ -10,6 +10,7 @@ define(['N/log'], (log) => {
 
     const onRequest = (context) => {
         try {
+            log.debug('innn');
             if (context.request.method !== 'POST') {
                 context.response.write('OK');
                 return;
