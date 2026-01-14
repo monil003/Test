@@ -58,7 +58,7 @@ function suitelet(request, response) {
         var results;
 
         do {
-            results = resultSet.getResults(start, start + batchSize);
+            results = resultSet.getResults(start, start + batchSize > start + 1000 ? start + 1000 : start + batchSize);
             if (!results || results.length === 0) break;
 
             for (var i = 0; i < results.length; i++) {
@@ -81,6 +81,8 @@ function suitelet(request, response) {
                 line++;
                 if (line > 1000) break;
             }
+
+            if (results.length < batchSize) break;
 
             start += batchSize;
             if (line > 1000) break;
