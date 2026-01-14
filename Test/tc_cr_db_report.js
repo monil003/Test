@@ -24,6 +24,12 @@ function suitelet(request, response) {
 
         const oneYearAgo = getOneYearAgoDate();
 
+        nlapiLogExecution(
+           'DEBUG',
+           'One year ago date',
+           oneYearAgo
+        );
+
         var filters = [];
         filters.push(new nlobjSearchFilter('posting', null, 'is', 'T'));
         filters.push(new nlobjSearchFilter('trandate', null, 'onorafter', oneYearAgo));
@@ -41,9 +47,21 @@ function suitelet(request, response) {
         var search = nlapiCreateSearch('transaction', filters, columns);
         var resultSet = search.runSearch();
 
+        nlapiLogExecution(
+           'DEBUG',
+           'Fetching Results',
+           resultSet
+        );
+
         var start = 0;
         var end = 10;
         var line = 1;
+
+        nlapiLogExecution(
+           'DEBUG',
+           'Fetching Results',
+           'Start: ' + start + ', End: ' + end
+        );
 
         do {
             var results = resultSet.getResults(start, end);
