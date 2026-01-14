@@ -5,137 +5,26 @@
 /**
  * @NScriptType Suitelet
  */
-
 function suitelet(request, response) {
+    var form = nlapiCreateForm('Last 12 Months Debit & Credit Report');
 
-    if (request.getMethod() === 'GET') {
+    // Check if we are drilling down into a specific account
+    var drillAccountId = request.getParameter('accountid');
 
-        var form = nlapiCreateForm('Last 12 Months Debit & Credit Report');
-
-        var drillAccountId = request.getParameter('accountid');
-
-        if (drillAccountId) {
-          // Show subaccount report
-          showSubaccountReport(drillAccountId, form);
-        }
-
-        var sublist = form.addSubList('custpage_report', 'list', 'Report');
-        sublist.addField('date', 'date', 'Date');
-        sublist.addField('type', 'text', 'Type');
-        sublist.addField('tranid', 'text', 'Document No');
-        sublist.addField('account', 'text', 'Account');
-        sublist.addField('debit', 'currency', 'Debit');
-        sublist.addField('credit', 'currency', 'Credit');
-        sublist.addField('entity', 'text', 'Entity');
-        sublist.addField('memo', 'text', 'Memo');
-
-        const oneYearAgo = getOneYearAgoDate();
-
-        nlapiLogExecution(
-           'DEBUG',
-           'One year ago date',
-           oneYearAgo
-        );
-
-        var filters = [];
-        filters.push(new nlobjSearchFilter('posting', null, 'is', 'T'));
-        filters.push(new nlobjSearchFilter('trandate', null, 'onorafter', oneYearAgo));
-
-        var columns = [];
-        columns.push(new nlobjSearchColumn('trandate'));
-        columns.push(new nlobjSearchColumn('type'));
-        columns.push(new nlobjSearchColumn('tranid'));
-        columns.push(new nlobjSearchColumn('account'));
-        columns.push(new nlobjSearchColumn('debitamount'));
-        columns.push(new nlobjSearchColumn('creditamount'));
-        columns.push(new nlobjSearchColumn('entity'));
-        columns.push(new nlobjSearchColumn('memo'));
-
-        var search = nlapiCreateSearch('transaction', filters, columns);
-        var resultSet = search.runSearch();
-
-        nlapiLogExecution(
-           'DEBUG',
-           'Fetching Results',
-           search
-        );
-
-        var start = 0;
-        var batchSize = 1000;
-        var line = 1;
-
-        do {
-            var results = resultSet.getResults(start, start + batchSize);
-
-            nlapiLogExecution('DEBUG', 'Batch', 'Start: ' + start + ', Fetched: ' + (results ? results.length : 0));
-
-            if (!results || results.length === 0) {
-                break;
-            }
-
-            for (var i = 0; i < results.length; i++) {
-                var result = results[i];
-
-                var accountId = result.getValue('account'); // internal ID
-                var accountName = result.getText('account');
-
-                // Create clickable link for drilldown
-                var drillUrl = nlapiResolveURL('SUITELET', 'customscript_tc_credit_debit_report', 'customdeploy_tc_credit_debit_report') +
-               '&accountid=' + accountId;
-
-                var linkHTML = '<a href="' + drillUrl + '">' + accountName + '</a>';
-
-                sublist.setLineItemValue('date', line, result.getValue('trandate'));
-                sublist.setLineItemValue('type', line, result.getText('type'));
-                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
-                sublist.setLineItemValue('account', line, result.getText('account'));
-                // sublist.setLineItemLink('account', line, drillUrl);
-                sublist.addField('account_link', 'inlinehtml', 'Account');
-                sublist.setLineItemValue('account_link', line, linkHTML);
-
-                var debit = result.getValue('debitamount');
-                var credit = result.getValue('creditamount');
-
-                if (debit && debit !== '0.00') {
-                    sublist.setLineItemValue('debit', line, debit);
-                }
-
-                if (credit && credit !== '0.00') {
-                    sublist.setLineItemValue('credit', line, credit);
-                }
-
-                sublist.setLineItemValue('entity', line, result.getText('entity'));
-                sublist.setLineItemValue('memo', line, result.getValue('memo'));
-
-                line++;
-
-                // Prevent exceeding 1000 lines in sublist
-                if (line > 1000) {
-                    nlapiLogExecution('AUDIT', 'Limit reached', 'Max 1000 lines per sublist');
-                    break;
-                }
-            }
-
-            start += batchSize;
-
-            // Stop if we reached sublist limit
-            if (line > 1000) break;
-
-        } while (true);
-
-        response.writePage(form);
-    }
-
+    // Function to calculate 1 year ago date
     function getOneYearAgoDate() {
         var d = new Date();
         d.setFullYear(d.getFullYear() - 1);
-
         return nlapiDateToString(d); // returns M/d/yy
     }
 
-    function showSubaccountReport(parentAccountId, form) {
+    if (drillAccountId) {
+        // === SUBACCOUNT REPORT ===
+        form.setTitle('Subaccount Report');
 
-        form.setTitle('Subaccount Report for Account ID: ' + parentAccountId);
+        // Back button
+        form.addButton('custpage_back', 'Back', 'window.location.href="' +
+            nlapiResolveURL('SUITELET','customscript_tc_credit_debit_report','customdeploy_tc_credit_debit_report') + '"');
 
         var sublist = form.addSubList('custpage_subreport', 'list', 'Subaccount Report');
         sublist.addField('date', 'date', 'Date');
@@ -147,20 +36,22 @@ function suitelet(request, response) {
         sublist.addField('entity', 'text', 'Entity');
         sublist.addField('memo', 'text', 'Memo');
 
-        var filters = [];
-        filters.push(new nlobjSearchFilter('posting', null, 'is', 'T'));
-        filters.push(new nlobjSearchFilter('trandate', null, 'onorafter', getOneYearAgoDate()));
-        filters.push(new nlobjSearchFilter('account', null, 'anyof', parentAccountId)); // only subaccounts of this account
+        var filters = [
+            new nlobjSearchFilter('posting', null, 'is', 'T'),
+            new nlobjSearchFilter('trandate', null, 'onorafter', getOneYearAgoDate()),
+            new nlobjSearchFilter('account', null, 'anyof', drillAccountId)
+        ];
 
-        var columns = [];
-        columns.push(new nlobjSearchColumn('trandate'));
-        columns.push(new nlobjSearchColumn('type'));
-        columns.push(new nlobjSearchColumn('tranid'));
-        columns.push(new nlobjSearchColumn('account')); // this will show subaccount name
-        columns.push(new nlobjSearchColumn('debitamount'));
-        columns.push(new nlobjSearchColumn('creditamount'));
-        columns.push(new nlobjSearchColumn('entity'));
-        columns.push(new nlobjSearchColumn('memo'));
+        var columns = [
+            new nlobjSearchColumn('trandate'),
+            new nlobjSearchColumn('type'),
+            new nlobjSearchColumn('tranid'),
+            new nlobjSearchColumn('account'),
+            new nlobjSearchColumn('debitamount'),
+            new nlobjSearchColumn('creditamount'),
+            new nlobjSearchColumn('entity'),
+            new nlobjSearchColumn('memo')
+        ];
 
         var search = nlapiCreateSearch('transaction', filters, columns);
         var resultSet = search.runSearch();
@@ -191,12 +82,98 @@ function suitelet(request, response) {
                 sublist.setLineItemValue('memo', line, result.getValue('memo'));
 
                 line++;
-                if (line > 1000) break; // max lines
+                if (line > 1000) break;
             }
 
             start += batchSize;
             if (line > 1000) break;
+        } while (true);
 
+    } else {
+        // === MAIN ACCOUNT REPORT ===
+        form.setTitle('Last 12 Months Debit & Credit Report');
+
+        // Add dropdown for drilldown
+        var accountSelect = form.addField('custpage_account_filter', 'select', 'Drill Down by Account');
+        accountSelect.addSelectOption('', 'Select an account');
+
+        // First, get all unique accounts from transactions in last year
+        var filters = [
+            new nlobjSearchFilter('posting', null, 'is', 'T'),
+            new nlobjSearchFilter('trandate', null, 'onorafter', getOneYearAgoDate())
+        ];
+
+        var columns = [
+            new nlobjSearchColumn('account').setGroup(true), // unique accounts
+        ];
+
+        var search = nlapiCreateSearch('transaction', filters, columns);
+        var resultSet = search.runSearch();
+        var accounts = resultSet.getResults(0, 1000); // max 1000 unique accounts
+
+        for (var i = 0; i < accounts.length; i++) {
+            var accountId = accounts[i].getValue('account');
+            var accountName = accounts[i].getText('account');
+            accountSelect.addSelectOption(accountId, accountName);
+        }
+
+        form.addSubmitButton('View Subaccounts');
+
+        // Main sublist
+        var sublist = form.addSubList('custpage_report', 'list', 'Report');
+        sublist.addField('date', 'date', 'Date');
+        sublist.addField('type', 'text', 'Type');
+        sublist.addField('tranid', 'text', 'Document No');
+        sublist.addField('account', 'text', 'Account');
+        sublist.addField('debit', 'currency', 'Debit');
+        sublist.addField('credit', 'currency', 'Credit');
+        sublist.addField('entity', 'text', 'Entity');
+        sublist.addField('memo', 'text', 'Memo');
+
+        var resultSet2 = nlapiCreateSearch('transaction', filters, [
+            new nlobjSearchColumn('trandate'),
+            new nlobjSearchColumn('type'),
+            new nlobjSearchColumn('tranid'),
+            new nlobjSearchColumn('account'),
+            new nlobjSearchColumn('debitamount'),
+            new nlobjSearchColumn('creditamount'),
+            new nlobjSearchColumn('entity'),
+            new nlobjSearchColumn('memo')
+        ]).runSearch();
+
+        var start = 0;
+        var line = 1;
+        var batchSize = 1000;
+
+        do {
+            var results = resultSet2.getResults(start, start + batchSize);
+            if (!results || results.length === 0) break;
+
+            for (var i = 0; i < results.length; i++) {
+                var result = results[i];
+
+                sublist.setLineItemValue('date', line, result.getValue('trandate'));
+                sublist.setLineItemValue('type', line, result.getText('type'));
+                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
+                sublist.setLineItemValue('account', line, result.getText('account'));
+
+                var debit = result.getValue('debitamount');
+                var credit = result.getValue('creditamount');
+
+                if (debit && debit !== '0.00') sublist.setLineItemValue('debit', line, debit);
+                if (credit && credit !== '0.00') sublist.setLineItemValue('credit', line, credit);
+
+                sublist.setLineItemValue('entity', line, result.getText('entity'));
+                sublist.setLineItemValue('memo', line, result.getValue('memo'));
+
+                line++;
+                if (line > 1000) break;
+            }
+
+            start += batchSize;
+            if (line > 1000) break;
         } while (true);
     }
+
+    response.writePage(form);
 }
