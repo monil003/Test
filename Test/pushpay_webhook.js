@@ -6,35 +6,34 @@
  * @NApiVersion 2.1
  * @NScriptType Suitelet
  */
-define(['N/log', 'N/record'], (log, record) => {
+define(['N/log'], (log) => {
 
     const onRequest = (context) => {
-        log.debug('here inn', context.request.method);
+        try {
+            if (context.request.method !== 'POST') {
+                context.response.write('OK');
+                return;
+            }
 
-        if (context.request.method !== 'GET') {
-          log.debug('in Get request');    
+            const headers = context.request.headers;
+            log.debug('Headers', headers);
+
+            const secret = headers['x-pushpay-secret'];
+
+            if (secret !== 'MY_SHARED_SECRET') {
+                log.error('Unauthorized webhook attempt', headers);
+                context.response.write('OK');
+                return;
+            }
+
+            const body = JSON.parse(context.request.body || '{}');
+            log.audit('Pushpay Webhook Payload', body);
+
+            // Save payload / queue MR here
+
+        } catch (e) {
+            log.error('Webhook Error', e);
         }
-      
-        if (context.request.method !== 'POST') {
-            log.debug('in post');
-            // context.response.write('Method Not Allowed');
-            return;
-        }
-
-        log.debug('innn');
-
-        // Validate shared secret
-        const secret = context.request.headers['x-pushpay-secret'];
-        if (secret !== 'MY_SHARED_SECRET') {
-            context.response.write('Unauthorized');
-            return;
-        }
-
-        const body = JSON.parse(context.request.body);
-        log.audit('Pushpay Webhook', body);
-
-        // Minimal processing here
-        // Queue Map/Reduce or save to custom record
 
         context.response.write('OK');
     };
