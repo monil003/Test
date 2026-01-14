@@ -8,23 +8,21 @@
 function suitelet(request, response) {
     var form = nlapiCreateForm('Last 12 Months Debit & Credit Report');
 
-    // Check if we are drilling down into a specific account
     var drillAccountId = request.getParameter('accountid');
 
-    // Function to calculate 1 year ago date
     function getOneYearAgoDate() {
         var d = new Date();
         d.setFullYear(d.getFullYear() - 1);
-        return nlapiDateToString(d); // returns M/d/yy
+        return nlapiDateToString(d);
     }
 
     if (drillAccountId) {
-        // === SUBACCOUNT REPORT ===
+        // ===== SUBACCOUNT REPORT =====
         form.setTitle('Subaccount Report');
 
         // Back button
         form.addButton('custpage_back', 'Back', 'window.location.href="' +
-            nlapiResolveURL('SUITELET','customscript_tc_credit_debit_report','customdeploy_tc_credit_debit_report') + '"');
+            nlapiResolveURL('SUITELET', 'customscript_tc_credit_debit_report', 'customdeploy_tc_credit_debit_report') + '"');
 
         var sublist = form.addSubList('custpage_subreport', 'list', 'Subaccount Report');
         sublist.addField('date', 'date', 'Date');
@@ -56,30 +54,31 @@ function suitelet(request, response) {
         var search = nlapiCreateSearch('transaction', filters, columns);
         var resultSet = search.runSearch();
 
-        var line = 1;
         var start = 0;
         var batchSize = 1000;
+        var line = 1;
+        var results;
 
         do {
-            var results = resultSet.getResults(start, start + batchSize);
+            results = resultSet.getResults(start, start + batchSize);
             if (!results || results.length === 0) break;
 
             for (var i = 0; i < results.length; i++) {
-                var result = results[i];
+                var r = results[i];
 
-                sublist.setLineItemValue('date', line, result.getValue('trandate'));
-                sublist.setLineItemValue('type', line, result.getText('type'));
-                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
-                sublist.setLineItemValue('subaccount', line, result.getText('account'));
+                sublist.setLineItemValue('date', line, r.getValue('trandate'));
+                sublist.setLineItemValue('type', line, r.getText('type'));
+                sublist.setLineItemValue('tranid', line, r.getValue('tranid'));
+                sublist.setLineItemValue('subaccount', line, r.getText('account'));
 
-                var debit = result.getValue('debitamount');
-                var credit = result.getValue('creditamount');
+                var debit = r.getValue('debitamount');
+                var credit = r.getValue('creditamount');
 
                 if (debit && debit !== '0.00') sublist.setLineItemValue('debit', line, debit);
                 if (credit && credit !== '0.00') sublist.setLineItemValue('credit', line, credit);
 
-                sublist.setLineItemValue('entity', line, result.getText('entity'));
-                sublist.setLineItemValue('memo', line, result.getValue('memo'));
+                sublist.setLineItemValue('entity', line, r.getText('entity'));
+                sublist.setLineItemValue('memo', line, r.getValue('memo'));
 
                 line++;
                 if (line > 1000) break;
@@ -87,48 +86,42 @@ function suitelet(request, response) {
 
             start += batchSize;
             if (line > 1000) break;
-        } while (true);
+        } while (results && results.length > 0);
 
     } else {
-        // === MAIN ACCOUNT REPORT ===
+        // ===== MAIN REPORT =====
         form.setTitle('Last 12 Months Debit & Credit Report');
 
-        // Add dropdown for drilldown
-        var accountSelect = form.addField('custpage_account_filter', 'select', 'Drill Down by Account');
-        accountSelect.addSelectOption('', 'Select an account');
-
-        // First, get all unique accounts from transactions in last year
-        var filters = [
+        // Get unique accounts manually
+        var accountFilters = [
             new nlobjSearchFilter('posting', null, 'is', 'T'),
             new nlobjSearchFilter('trandate', null, 'onorafter', getOneYearAgoDate())
         ];
 
-        var columns = [
-            new nlobjSearchColumn('account'), // unique accounts
-        ];
+        var accountColumns = [new nlobjSearchColumn('account')];
 
-        var search = nlapiCreateSearch('transaction', filters, columns);
-        var resultSet = search.runSearch();
-        var accounts = resultSet.getResults(0, 1000); // max 1000 unique accounts
-        var results;
-        var accountMap = {}; // key = accountId, value = accountName
+        var accountSearch = nlapiCreateSearch('transaction', accountFilters, accountColumns);
+        var accountResultSet = accountSearch.runSearch();
+
+        var start = 0;
+        var batchSize = 1000;
+        var accountResults;
+        var accountMap = {};
 
         do {
-            results = resultSet.getResults(start, start + batchSize);
-            if (!results || results.length === 0) break;
+            accountResults = accountResultSet.getResults(start, start + batchSize);
+            if (!accountResults || accountResults.length === 0) break;
 
-            for (var i = 0; i < results.length; i++) {
-                var accountId = results[i].getValue('account');
-                var accountName = results[i].getText('account');
-                if (!accountMap[accountId]) {
-                    accountMap[accountId] = accountName; // add only if not exists
-                }
+            for (var i = 0; i < accountResults.length; i++) {
+                var accId = accountResults[i].getValue('account');
+                var accName = accountResults[i].getText('account');
+                if (!accountMap[accId]) accountMap[accId] = accName;
             }
 
             start += batchSize;
-        } while (results && results.length > 0);
+        } while (accountResults && accountResults.length > 0);
 
-        // Now populate dropdown
+        // Add account dropdown
         var accountSelect = form.addField('custpage_account_filter', 'select', 'Drill Down by Account');
         accountSelect.addSelectOption('', 'Select an account');
 
@@ -149,7 +142,10 @@ function suitelet(request, response) {
         sublist.addField('entity', 'text', 'Entity');
         sublist.addField('memo', 'text', 'Memo');
 
-        var resultSet2 = nlapiCreateSearch('transaction', filters, [
+        // Fetch transactions
+        start = 0;
+        line = 1;
+        var transactionSearch = nlapiCreateSearch('transaction', accountFilters, [
             new nlobjSearchColumn('trandate'),
             new nlobjSearchColumn('type'),
             new nlobjSearchColumn('tranid'),
@@ -158,32 +154,30 @@ function suitelet(request, response) {
             new nlobjSearchColumn('creditamount'),
             new nlobjSearchColumn('entity'),
             new nlobjSearchColumn('memo')
-        ]).runSearch();
-
-        var start = 0;
-        var line = 1;
-        var batchSize = 1000;
+        ]);
+        var transactionResultSet = transactionSearch.runSearch();
+        var results;
 
         do {
-            var results = resultSet2.getResults(start, start + batchSize);
+            results = transactionResultSet.getResults(start, start + batchSize);
             if (!results || results.length === 0) break;
 
             for (var i = 0; i < results.length; i++) {
-                var result = results[i];
+                var r = results[i];
 
-                sublist.setLineItemValue('date', line, result.getValue('trandate'));
-                sublist.setLineItemValue('type', line, result.getText('type'));
-                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
-                sublist.setLineItemValue('account', line, result.getText('account'));
+                sublist.setLineItemValue('date', line, r.getValue('trandate'));
+                sublist.setLineItemValue('type', line, r.getText('type'));
+                sublist.setLineItemValue('tranid', line, r.getValue('tranid'));
+                sublist.setLineItemValue('account', line, r.getText('account'));
 
-                var debit = result.getValue('debitamount');
-                var credit = result.getValue('creditamount');
+                var debit = r.getValue('debitamount');
+                var credit = r.getValue('creditamount');
 
                 if (debit && debit !== '0.00') sublist.setLineItemValue('debit', line, debit);
                 if (credit && credit !== '0.00') sublist.setLineItemValue('credit', line, credit);
 
-                sublist.setLineItemValue('entity', line, result.getText('entity'));
-                sublist.setLineItemValue('memo', line, result.getValue('memo'));
+                sublist.setLineItemValue('entity', line, r.getText('entity'));
+                sublist.setLineItemValue('memo', line, r.getValue('memo'));
 
                 line++;
                 if (line > 1000) break;
@@ -191,7 +185,7 @@ function suitelet(request, response) {
 
             start += batchSize;
             if (line > 1000) break;
-        } while (true);
+        } while (results && results.length > 0);
     }
 
     response.writePage(form);
