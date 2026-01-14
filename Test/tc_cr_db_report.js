@@ -55,28 +55,28 @@ function suitelet(request, response) {
             for (var i = 0; i < results.length; i++) {
                 var result = results[i];
 
-                sublist.setLineItemValue(
+                form.setLineItemValue(
                     'custpage_report',
                     'date',
                     line.toString(),
                     result.getValue('trandate')
                 );
 
-                sublist.setLineItemValue(
+                form.setLineItemValue(
                     'custpage_report',
                     'type',
                     line.toString(),
                     result.getText('type')
                 );
 
-                sublist.setLineItemValue(
+                form.setLineItemValue(
                     'custpage_report',
                     'tranid',
                     line.toString(),
                     result.getValue('tranid')
                 );
 
-                sublist.setLineItemValue(
+                form.setLineItemValue(
                     'custpage_report',
                     'account',
                     line.toString(),
@@ -87,7 +87,7 @@ function suitelet(request, response) {
                 var credit = result.getValue('creditamount');
 
                 if (debit && debit !== '0.00') {
-                    sublist.setLineItemValue(
+                    form.setLineItemValue(
                         'custpage_report',
                         'debit',
                         line.toString(),
@@ -96,7 +96,7 @@ function suitelet(request, response) {
                 }
 
                 if (credit && credit !== '0.00') {
-                    sublist.setLineItemValue(
+                    form.setLineItemValue(
                         'custpage_report',
                         'credit',
                         line.toString(),
@@ -104,14 +104,14 @@ function suitelet(request, response) {
                     );
                 }
 
-                sublist.setLineItemValue(
+                form.setLineItemValue(
                     'custpage_report',
                     'entity',
                     line.toString(),
                     result.getText('entity')
                 );
 
-                sublist.setLineItemValue(
+                form.setLineItemValue(
                     'custpage_report',
                     'memo',
                     line.toString(),
