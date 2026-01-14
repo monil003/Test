@@ -55,23 +55,68 @@ function suitelet(request, response) {
             for (var i = 0; i < results.length; i++) {
                 var result = results[i];
 
-                sublist.setLineItemValue('date', line, result.getValue('trandate'));
-                sublist.setLineItemValue('type', line, result.getText('type'));
-                sublist.setLineItemValue('tranid', line, result.getValue('tranid'));
-                sublist.setLineItemValue('account', line, result.getText('account'));
+                sublist.setLineItemValue(
+                    'custpage_report',
+                    'date',
+                    line.toString(),
+                    result.getValue('trandate')
+                );
+
+                sublist.setLineItemValue(
+                    'custpage_report',
+                    'type',
+                    line.toString(),
+                    result.getText('type')
+                );
+
+                sublist.setLineItemValue(
+                    'custpage_report',
+                    'tranid',
+                    line.toString(),
+                    result.getValue('tranid')
+                );
+
+                sublist.setLineItemValue(
+                    'custpage_report',
+                    'account',
+                    line.toString(),
+                    result.getText('account')
+                );
 
                 var debit = result.getValue('debitamount');
                 var credit = result.getValue('creditamount');
 
                 if (debit && debit !== '0.00') {
-                    sublist.setLineItemValue('debit', line, debit);
-                }
-                if (credit && credit !== '0.00') {
-                    sublist.setLineItemValue('credit', line, credit);
+                    sublist.setLineItemValue(
+                        'custpage_report',
+                        'debit',
+                        line.toString(),
+                        debit
+                    );
                 }
 
-                sublist.setLineItemValue('entity', line, result.getText('entity'));
-                sublist.setLineItemValue('memo', result.getValue('memo'));
+                if (credit && credit !== '0.00') {
+                    sublist.setLineItemValue(
+                        'custpage_report',
+                        'credit',
+                        line.toString(),
+                        credit
+                    );
+                }
+
+                sublist.setLineItemValue(
+                    'custpage_report',
+                    'entity',
+                    line.toString(),
+                    result.getText('entity')
+                );
+
+                sublist.setLineItemValue(
+                    'custpage_report',
+                    'memo',
+                    line.toString(),
+                    result.getValue('memo')
+                );
 
                 line++;
             }
