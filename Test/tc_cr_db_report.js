@@ -1,9 +1,8 @@
 /**
- * @version v1.0.2
+ * @version v1.0.1
  */
 
 /**
- * @NApiVersion 1.0
  * @NScriptType Suitelet
  */
 function suitelet(request, response) {
