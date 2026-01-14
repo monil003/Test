@@ -83,7 +83,7 @@ function suitelet(request, response) {
                 var drillUrl = nlapiResolveURL('SUITELET', 'customscript_tc_credit_debit_report', 'customdeploy_tc_credit_debit_report') +
                '&accountid=' + accountId;
 
-                var linkHTML = '<a href="' + url + '">' + accountName + '</a>';
+                var linkHTML = '<a href="' + drillUrl + '">' + accountName + '</a>';
 
                 sublist.setLineItemValue('date', line, result.getValue('trandate'));
                 sublist.setLineItemValue('type', line, result.getText('type'));
