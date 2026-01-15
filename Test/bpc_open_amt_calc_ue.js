@@ -1,10 +1,7 @@
 /**
- * @version v1.0.1
- */
-
-/**
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
+ * @version v1.0.3
  */
 define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) => {
 
@@ -17,8 +14,8 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
             var deleteFlag = false;
 
             if (context.type === context.UserEventType.DELETE) {
-              rec = context.oldRecord;
-              deleteFlag = true;
+                rec = context.oldRecord;
+                deleteFlag = true;
             }
 
             log.debug("After Submit Triggered", { recType, recId });
@@ -27,12 +24,12 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
 
                 if (recId == '0' && recType == 'vendorpayment') {
                     log.debug('Full credit apply case');
-            
+
                     processVendorBillsWithCredits();
-            
+
                     return;
                 }
-            
+
             } catch (error) {
                 log.debug('error', error);
             }
@@ -45,26 +42,26 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
             // -----------------------------------------------
 
             if (recType === record.Type.RETURN_AUTHORIZATION && deleteFlag) return;
-              
+
             if (recType === record.Type.RETURN_AUTHORIZATION || recType === record.Type.ITEM_RECEIPT) {
 
                 let targetRAId = null;
                 let exchangeRate = 1;
-            
+
                 if (recType === record.Type.ITEM_RECEIPT) {
-                    targetRAId = rec.getValue("createdfrom"); 
-                    
+                    targetRAId = rec.getValue("createdfrom");
+
                     log.debug("Item Receipt created from:", targetRAId);
-    
+
                     if (!targetRAId) {
                         log.debug("No RA found for Item Receipt");
                     }
                 }
-            
+
                 const calcRecId = (recType === record.Type.RETURN_AUTHORIZATION ? recId : targetRAId);
-            
+
                 if (calcRecId) {
-            
+
                     // Load the RA record
                     const raRecord = record.load({
                         type: record.Type.RETURN_AUTHORIZATION,
@@ -72,12 +69,12 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
                     });
 
                     if (!raRecord) return;
-            
+
                     let openAmtForeign = 0;
-            
+
                     const lineCount = raRecord.getLineCount({ sublistId: 'item' });
                     exchangeRate = parseFloat(raRecord.getValue('exchangerate')) || 1;
-            
+
                     for (let i = 0; i < lineCount; i++) {
                         const isClosed = raRecord.getSublistValue({
                             sublistId: 'item',
@@ -85,42 +82,42 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
                             line: i
                         });
                         if (isClosed === true || isClosed === 'T') continue;
-            
+
                         const qtyReceived = parseFloat(raRecord.getSublistValue({
                             sublistId: 'item',
                             fieldId: 'quantityreceived',
                             line: i
                         })) || 0;
-            
+
                         const rate = parseFloat(raRecord.getSublistValue({
                             sublistId: 'item',
                             fieldId: 'rate',
                             line: i
                         })) || 0;
-            
+
                         const qty = parseFloat(raRecord.getSublistValue({
                             sublistId: 'item',
                             fieldId: 'quantity',
                             line: i
                         })) || 0;
-            
+
                         const pendingQty = qty - qtyReceived;
 
                         log.debug('RA Loggers', {
-                          qty: qty,
-                          qtyReceived: qtyReceived,
-                          rate: rate,
-                          pendingQty: pendingQty
+                            qty: qty,
+                            qtyReceived: qtyReceived,
+                            rate: rate,
+                            pendingQty: pendingQty
                         })
-            
+
                         if (pendingQty > 0) {
                             openAmtForeign += pendingQty * rate;
                         }
                     }
-            
+
                     // const exchangeRate = 1;
                     const openAmtBase = openAmtForeign * exchangeRate;
-            
+
                     // Submit updated fields on RA
                     record.submitFields({
                         type: record.Type.RETURN_AUTHORIZATION,
@@ -131,7 +128,7 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
                         },
                         options: { enableSourcing: false, ignoreMandatoryFields: true }
                     });
-            
+
                     log.debug("Updated RA open amounts", {
                         raId: calcRecId,
                         openAmtForeign,
@@ -151,9 +148,9 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
                     openAmtBase = openAmtForeign * openAmounts.exchangeRate;
 
                     log.debug("Primary Record Values", {
-                      openAmtForeign,
-                      openAmtBase
-                    }); 
+                        openAmtForeign,
+                        openAmtBase
+                    });
                 }
 
                 // -----------------------------------------------
@@ -163,40 +160,40 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
                     var related = getAppliedOrApplyingTransactions(rec);
 
                     if (recType == 'customerpayment') {
-                      const paymentReversalInvoicesIds = getPaymentReversalInvoices(recId);
-                      // const recentlyUnappliedInvoicesIds = getRecentlyModifiedInvoices(recId);
-                      const recentlyUnappliedInvoicesIds = detectApplyAmountChanges(oldRec, rec);
+                        const paymentReversalInvoicesIds = getPaymentReversalInvoices(recId);
+                        // const recentlyUnappliedInvoicesIds = getRecentlyModifiedInvoices(recId);
+                        const recentlyUnappliedInvoicesIds = detectApplyAmountChanges(oldRec, rec);
 
-                      log.debug('paymentReversalInvoicesIds', paymentReversalInvoicesIds);
-                      log.debug('recentlyUnappliedInvoicesIds', recentlyUnappliedInvoicesIds);
+                        log.debug('paymentReversalInvoicesIds', paymentReversalInvoicesIds);
+                        log.debug('recentlyUnappliedInvoicesIds', recentlyUnappliedInvoicesIds);
 
-                      if (paymentReversalInvoicesIds && paymentReversalInvoicesIds.length > 0) {
-                         related = related.concat(paymentReversalInvoicesIds);
+                        if (paymentReversalInvoicesIds && paymentReversalInvoicesIds.length > 0) {
+                            related = related.concat(paymentReversalInvoicesIds);
 
-                         // Remove duplicates
-                         related = Array.from(new Set(related));
-                      }
+                            // Remove duplicates
+                            related = Array.from(new Set(related));
+                        }
 
-                      if (recentlyUnappliedInvoicesIds && recentlyUnappliedInvoicesIds.length > 0) {
-                         related = related.concat(recentlyUnappliedInvoicesIds);
+                        if (recentlyUnappliedInvoicesIds && recentlyUnappliedInvoicesIds.length > 0) {
+                            related = related.concat(recentlyUnappliedInvoicesIds);
 
-                         // Remove duplicates
-                         related = Array.from(new Set(related));
-                      }
+                            // Remove duplicates
+                            related = Array.from(new Set(related));
+                        }
                     }
 
                     if (recType == 'customrecord_bpc_tm_cust_paymt') {
-                      const relatedPaymentId = rec.getValue('custrecord_bpc_tm_pymt');
-                      const relatedInvoiceId = rec.getValue('custrecord_bpc_tm_invoice');
+                        const relatedPaymentId = rec.getValue('custrecord_bpc_tm_pymt');
+                        const relatedInvoiceId = rec.getValue('custrecord_bpc_tm_invoice');
 
-                      if (relatedPaymentId) related.push(relatedPaymentId);
-                      if (relatedInvoiceId) related.push(relatedInvoiceId);
+                        if (relatedPaymentId) related.push(relatedPaymentId);
+                        if (relatedInvoiceId) related.push(relatedInvoiceId);
                     }
 
                     if (recType == 'vendorprepaymentapplication') {
-                      const vendorPrePaymentId = rec.getValue('vendorprepayment');
-                      log.debug('vendorPrePaymentId', vendorPrePaymentId);
-                      related.push(vendorPrePaymentId);
+                        const vendorPrePaymentId = rec.getValue('vendorprepayment');
+                        log.debug('vendorPrePaymentId', vendorPrePaymentId);
+                        related.push(vendorPrePaymentId);
                     }
 
                     if (recType == 'vendorpayment' || recType == 'vendorcredit' || recType == 'creditmemo') {
@@ -214,21 +211,21 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
                         log.debug("Processing Related Transactions", related);
 
                         if (related.length > 50) {
-                           const taskObj = task.create({
-                            taskType: task.TaskType.MAP_REDUCE
-                           });
-                           
-                          taskObj.scriptId = 'customscript_bpc_trigger_open_amount_mr';
-                          taskObj.deploymentId = 'customdeploy_bpc_trigger_open_amount_mr';
+                            const taskObj = task.create({
+                                taskType: task.TaskType.MAP_REDUCE
+                            });
 
-                          taskObj.params = {
-                            custscript_related_ids: JSON.stringify(related)
-                          };
+                            taskObj.scriptId = 'customscript_bpc_trigger_open_amount_mr';
+                            taskObj.deploymentId = 'customdeploy_bpc_trigger_open_amount_mr';
 
-                          const taskId = taskObj.submit();
-                          log.debug("Map/Reduce Triggered", taskId); 
+                            taskObj.params = {
+                                custscript_related_ids: JSON.stringify(related)
+                            };
 
-                          return;
+                            const taskId = taskObj.submit();
+                            log.debug("Map/Reduce Triggered", taskId);
+
+                            return;
                         }
 
                         related.forEach(id => {
@@ -278,97 +275,97 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
 
         log.debug('lineCount', lineCount);
         log.debug('billLineCount', billLineCount);
-      
-        if (lineCount) {
-           for (let i = 0; i < lineCount; i++) {
-            const isApplied = rec.getSublistValue({
-                sublistId: applySublistId,
-                fieldId: 'apply',
-                line: i
-            });
 
-            if (isApplied === true || isApplied === 'T') {
-                const appliedId = rec.getSublistValue({
+        if (lineCount) {
+            for (let i = 0; i < lineCount; i++) {
+                const isApplied = rec.getSublistValue({
                     sublistId: applySublistId,
-                    fieldId: 'internalid',
+                    fieldId: 'apply',
                     line: i
                 });
-                if (appliedId) relatedIds.push(appliedId);
-            }
 
-            // if (rec.type == 'vendorcredit') {
-            //     // const appliedId = rec.getSublistValue({
-            //     //     sublistId: applySublistId,
-            //     //     fieldId: 'internalid',
-            //     //     line: i
-            //     // });
-            //     // if (appliedId) relatedIds.push(appliedId);
-            // } else if (isApplied === true || isApplied === 'T') {
-            //     const appliedId = rec.getSublistValue({
-            //         sublistId: applySublistId,
-            //         fieldId: 'internalid',
-            //         line: i
-            //     });
-            //     if (appliedId) relatedIds.push(appliedId);
-            // }
-          }
+                if (isApplied === true || isApplied === 'T') {
+                    const appliedId = rec.getSublistValue({
+                        sublistId: applySublistId,
+                        fieldId: 'internalid',
+                        line: i
+                    });
+                    if (appliedId) relatedIds.push(appliedId);
+                }
+
+                // if (rec.type == 'vendorcredit') {
+                //     // const appliedId = rec.getSublistValue({
+                //     //     sublistId: applySublistId,
+                //     //     fieldId: 'internalid',
+                //     //     line: i
+                //     // });
+                //     // if (appliedId) relatedIds.push(appliedId);
+                // } else if (isApplied === true || isApplied === 'T') {
+                //     const appliedId = rec.getSublistValue({
+                //         sublistId: applySublistId,
+                //         fieldId: 'internalid',
+                //         line: i
+                //     });
+                //     if (appliedId) relatedIds.push(appliedId);
+                // }
+            }
         }
 
         if (billLineCount) {
-           for (let i = 0; i < billLineCount; i++) {
-            const isApplied = rec.getSublistValue({
-                sublistId: applyBillSublistId,
-                fieldId: 'apply',
-                line: i
-            });
-
-            if (isApplied === true || isApplied === 'T') {
-                const appliedId = rec.getSublistValue({
+            for (let i = 0; i < billLineCount; i++) {
+                const isApplied = rec.getSublistValue({
                     sublistId: applyBillSublistId,
-                    fieldId: 'internalid',
+                    fieldId: 'apply',
                     line: i
                 });
-                if (appliedId) relatedIds.push(appliedId);
+
+                if (isApplied === true || isApplied === 'T') {
+                    const appliedId = rec.getSublistValue({
+                        sublistId: applyBillSublistId,
+                        fieldId: 'internalid',
+                        line: i
+                    });
+                    if (appliedId) relatedIds.push(appliedId);
+                }
             }
-          }
         }
 
         if (creditLineCount) {
-           for (let i = 0; i < creditLineCount; i++) {
-            const isApplied = rec.getSublistValue({
-                sublistId: applyCreditSublistId,
-                fieldId: 'apply',
-                line: i
-            });
-
-            if (isApplied === true || isApplied === 'T') {
-                const appliedId = rec.getSublistValue({
+            for (let i = 0; i < creditLineCount; i++) {
+                const isApplied = rec.getSublistValue({
                     sublistId: applyCreditSublistId,
-                    fieldId: 'internalid',
+                    fieldId: 'apply',
                     line: i
                 });
-                if (appliedId) relatedIds.push(appliedId);
+
+                if (isApplied === true || isApplied === 'T') {
+                    const appliedId = rec.getSublistValue({
+                        sublistId: applyCreditSublistId,
+                        fieldId: 'internalid',
+                        line: i
+                    });
+                    if (appliedId) relatedIds.push(appliedId);
+                }
             }
-          }
         }
 
         if (depositLineCount) {
-           for (let i = 0; i < depositLineCount; i++) {
-            const isApplied = rec.getSublistValue({
-                sublistId: applyDepositedSublistId,
-                fieldId: 'apply',
-                line: i
-            });
-
-            if (isApplied === true || isApplied === 'T') {
-                const appliedId = rec.getSublistValue({
+            for (let i = 0; i < depositLineCount; i++) {
+                const isApplied = rec.getSublistValue({
                     sublistId: applyDepositedSublistId,
-                    fieldId: 'internalid',
+                    fieldId: 'apply',
                     line: i
                 });
-                if (appliedId) relatedIds.push(appliedId);
+
+                if (isApplied === true || isApplied === 'T') {
+                    const appliedId = rec.getSublistValue({
+                        sublistId: applyDepositedSublistId,
+                        fieldId: 'internalid',
+                        line: i
+                    });
+                    if (appliedId) relatedIds.push(appliedId);
+                }
             }
-          }
         }
 
         log.debug('relatedIds', relatedIds);
@@ -473,40 +470,40 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
     function processVendorBillsWithCredits() {
         const vendorbillSearchObj = search.create({
             type: "vendorbill",
-            settings:[{"name":"consolidationtype","value":"ACCTTYPE"}],
+            settings: [{ "name": "consolidationtype", "value": "ACCTTYPE" }],
             filters: [
-               ["type","anyof","VendBill"], 
-               "AND", 
-               ["applyingtransaction","noneof","@NONE@"], 
-               "AND", 
-               ["applyingtransaction.type","anyof","VendCred"], 
-               // "AND", 
-               // ["status","anyof","VendBill:B"], 
-               "AND", 
-               ["applyingtransaction.linelastmodifieddate","notbefore","minutesago0","minutesago10"]
-               // ["applyingtransaction.linelastmodifieddate","within","today"]
+                ["type", "anyof", "VendBill"],
+                "AND",
+                ["applyingtransaction", "noneof", "@NONE@"],
+                "AND",
+                ["applyingtransaction.type", "anyof", "VendCred"],
+                // "AND", 
+                // ["status","anyof","VendBill:B"], 
+                "AND",
+                ["applyingtransaction.linelastmodifieddate", "notbefore", "minutesago0", "minutesago10"]
+                // ["applyingtransaction.linelastmodifieddate","within","today"]
             ],
             columns: [
-               search.createColumn({name: "tranid", label: "Document Number"}),
-               search.createColumn({name: "applyingtransaction", label: "Applying Transaction"}),
-               search.createColumn({
-                  name: "trandate",
-                  join: "applyingTransaction",
-                  label: "Date"
-               }),
-               search.createColumn({
-                  name: "internalid",
-                  join: "applyingTransaction",
-                  label: "Internal ID"
-               })
+                search.createColumn({ name: "tranid", label: "Document Number" }),
+                search.createColumn({ name: "applyingtransaction", label: "Applying Transaction" }),
+                search.createColumn({
+                    name: "trandate",
+                    join: "applyingTransaction",
+                    label: "Date"
+                }),
+                search.createColumn({
+                    name: "internalid",
+                    join: "applyingTransaction",
+                    label: "Internal ID"
+                })
             ]
         });
 
-        vendorbillSearchObj.run().each(function(result){
+        vendorbillSearchObj.run().each(function (result) {
             const billId = result.id;
             var billIds = [];
             var creditIds = [];
-          
+
             if (billId) {
                 log.debug('Processing Bill', billId);
                 billIds.push(billId);
@@ -514,20 +511,20 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
             }
 
             const creditId = result.getValue({
-              name: "internalid",
-              join: "applyingTransaction"
+                name: "internalid",
+                join: "applyingTransaction"
             });
 
             if (creditId) {
-              log.debug("Updating Bill Credit", creditId);
-              creditIds.push(creditId);
+                log.debug("Updating Bill Credit", creditId);
+                creditIds.push(creditId);
 
-              getOpenAmountsForRecord(record.Type.VENDOR_CREDIT, creditId);
+                getOpenAmountsForRecord(record.Type.VENDOR_CREDIT, creditId);
             }
-          
+
             return {
-               billIds: billIds,
-               creditIds: creditIds
+                billIds: billIds,
+                creditIds: creditIds
             };
         });
     }
@@ -571,7 +568,7 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
             filters: [
                 ["type", "anyof", "CustInvc"],
                 "AND",
-                ["linelastmodifieddate","notbefore","minutesago1"]
+                ["linelastmodifieddate", "notbefore", "minutesago1"]
             ],
             columns: [
                 search.createColumn({ name: "internalid" }),
@@ -667,7 +664,7 @@ define(['N/record', 'N/search', 'N/log', 'N/task'], (record, search, log, task) 
 
             return changeInvoiceIds;
         } catch (error) {
-            log.debug('error in detecting apply amount changes');
+            log.debug('Fail to detect unapplied');
         }
     }
 
