@@ -14,9 +14,8 @@ function suitelet(request, response) {
 
         // 2. Create Report Definition
         var reportDef = nlapiCreateReportDefinition();
-        reportDef.setRecordType('transaction');
 
-        // 3. Filters
+        // 3. Filters (Transaction context is inferred)
         reportDef.addFilter(
             new nlobjSearchFilter('posting', null, 'is', 'T')
         );
@@ -33,17 +32,17 @@ function suitelet(request, response) {
         // 4. Pivot Table
         var pivot = new nlobjPivotTable();
 
-        // ---- Rows (Account)
+        // Rows → Account
         pivot.addRow(
             new nlobjPivotRow('account')
         );
 
-        // ---- Columns (Month)
+        // Columns → Month
         pivot.addColumn(
             new nlobjPivotColumn('trandate', 'month')
         );
 
-        // ---- Measures
+        // Measures → Debit / Credit
         pivot.addMeasure(
             new nlobjPivotMeasure('debitamount', 'sum', 'Total Debit')
         );
@@ -52,20 +51,16 @@ function suitelet(request, response) {
             new nlobjPivotMeasure('creditamount', 'sum', 'Total Credit')
         );
 
-        // 5. Attach pivot to report definition
+        // 5. Attach pivot
         reportDef.setPivotTable(pivot);
 
         // 6. Attach report to form
         form.setReportDefinition(reportDef);
 
-        // 7. Render
         response.writePage(form);
     }
 }
 
-/**
- * Returns date string (M/d/yyyy) one year ago
- */
 function getOneYearAgoDate() {
     var d = new Date();
     d.setFullYear(d.getFullYear() - 1);
