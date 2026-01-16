@@ -492,7 +492,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                                 var ownerOrFilters = [];
 
-                                if (bbGrayOwnerIds.length < 500) {
+                                if (bbGrayOwnerIds.length < 600) {
 
                                     bbGrayOwnerIds.forEach(function (val, index) {
                                         ownerOrFilters.push(
