@@ -90,6 +90,15 @@ function mapReduce(error, record, runtime, render, email, search, task, format) 
                     }
 
                 }
+
+                try {
+                    if (purchaseOrderID[0].shipping_cost) {
+                        load_sales_order.setValue({ fieldId: 'custbody_tc_sampleshippingcost', value: purchaseOrderID[0].shipping_cost });
+                    }
+                } catch (error) {
+                    log.debug('Failed to set custom shipping cost field on SO')
+                }
+              
                 load_sales_order.save({ enableSourcing: true, ignoreMandatoryFields: true })
                 log.debug({ title: 'shipment_Date', details: "shipment_Date" });
 
@@ -200,8 +209,12 @@ function mapReduce(error, record, runtime, render, email, search, task, format) 
                                 value: purchaseOrderID[0].shipping_method
                             });
 
+                            // ifRec.setValue({
+                            //     fieldId: 'shippingcost',
+                            //     value: parseFloat(purchaseOrderID[0].shipping_cost) || 0
+                            // });
                             ifRec.setValue({
-                                fieldId: 'shippingcost',
+                                fieldId: 'custbody_tc_sampleshippingcost',
                                 value: parseFloat(purchaseOrderID[0].shipping_cost) || 0
                             });
                         }
@@ -368,10 +381,18 @@ function mapReduce(error, record, runtime, render, email, search, task, format) 
             }
 
             if (obj.shippingCost) {
-                IFRec.setValue({
-                    fieldId: 'shippingcost',
+                // IFRec.setValue({
+                //     fieldId: 'shippingcost',
+                //     value: obj.shippingCost
+                // });
+                try {
+                  IFRec.setValue({
+                    fieldId: 'custbody_tc_sampleshippingcost',
                     value: obj.shippingCost
-                });
+                  });  
+                } catch (error) {
+                  log.debug('Failed to set custom shipping cost field');
+                }
             }
 
             const itemFulfillmentRec = IFRec.save({ enableSourcing: true, ignoreMandatoryFields: true });
