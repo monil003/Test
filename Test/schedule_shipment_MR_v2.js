@@ -12,319 +12,319 @@
 define(['N/error', 'N/record', 'N/runtime', 'N/render', 'N/email', 'N/search', 'N/task', 'N/format'], mapReduce);
 function mapReduce(error, record, runtime, render, email, search, task, format) {
 
-  const SAMPLE_USER_EMPLOYEE_ID = 125156;
-  
-  function getInputData(inputContext) {
-    try {
+    const SAMPLE_USER_EMPLOYEE_ID = 125156;
 
-      var curScriptObj = runtime.getCurrentScript();
-      var userObj = runtime.getCurrentUser().id;
-      log.debug({ title: 'userObj', details: userObj })
-      var selectedPurchaseOrder = JSON.parse(curScriptObj.getParameter({ name: 'custscript_script_object_tc' }));
-      log.debug({ title: 'selectedPurchaseOrder', details: selectedPurchaseOrder });
-
-      if (selectedPurchaseOrder[0].isIFOrder) {
-        return selectedPurchaseOrder;
-      }
-
-      var shipment_Date = selectedPurchaseOrder[0]['shipment_date'];
-      var location_new = selectedPurchaseOrder[0]['location_new'];
-      var location_name = selectedPurchaseOrder[0]['location_name'];
-      var customerID = selectedPurchaseOrder[0]['customerID'];
-      var subid = selectedPurchaseOrder[0]['subid'];
-      var create_shipping_rec = selectedPurchaseOrder[0]['create_shipping_rec'];
-      var tracking_number = selectedPurchaseOrder[0]['tracking_number'];
-      var shipping_cost = selectedPurchaseOrder[0]['shipping_cost'];
-      var shipping_method = selectedPurchaseOrder[0]['shipping_method'];
-
-      var gropedByCustomer = groupByItem(selectedPurchaseOrder, 'internalID');
-      log.debug({ title: 'gropedByCustomer', details: gropedByCustomer });
-      
-      return gropedByCustomer;
-
-    } catch (error) {
-      log.error({ title: 'mapReduce.getInputData', details: error });
-      throw error;
-    }
-  }
-
-  function map(context) {
-    try {
-      var purchaseOrderID = JSON.parse(context.value);
-      log.debug({ title: 'purchaseOrderID', details: purchaseOrderID });
-
-      if (!purchaseOrderID.isIFOrder) {
-      
-         var salesorderID = purchaseOrderID[0]['internalID']
-         log.debug({ title: 'salesorderID', details: salesorderID })
-         var load_sales_order = record.load({ type: record.Type.SALES_ORDER, id: salesorderID, isDynamic: true });
-
-         var createIF = purchaseOrderID[0]['create_shipping_rec'] == 'T';
-
-         for (var i = 0; i < purchaseOrderID.length; i++) {
-
-        var itemID = purchaseOrderID[i].itemID;
-        var qty = purchaseOrderID[i].shippingQty || purchaseOrderID[i].qty;
-        var shipment_Date = purchaseOrderID[i].shipment_date;
-        var new_location = purchaseOrderID[i].location_new
-        var linenumber = purchaseOrderID[i].line_id;
-
-        var lineID = load_sales_order.findSublistLineWithValue({ sublistId: 'item', fieldId: 'line', value: linenumber });
-        log.debug({ title: 'lineID', details: lineID })
-
-        var lineQty = load_sales_order.getSublistValue({ sublistId: 'item', fieldId: 'quantity', line: lineID });
-        log.debug({ title: 'lineQty', details: lineQty })
-
-        if (lineID != -1) {
-          load_sales_order.selectLine({ sublistId: 'item', line: lineID });
-
-          if (shipment_Date) {
-            log.debug({ title: 'shipDate', details: shipment_Date })
-            load_sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'custcol_tc_scheduled_ship_date', value: new Date(shipment_Date) });
-          }
-
-          if (new_location) {
-            load_sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'inventorylocation', value: new_location });
-          }
-          load_sales_order.commitLine({ sublistId: 'item' })
-        }
-
-      }
-         load_sales_order.save({ enableSourcing: true, ignoreMandatoryFields: true })
-         log.debug({ title: 'shipment_Date', details: "shipment_Date" });
-
-         if (createIF) {
-        if (purchaseOrderID[0].location_new) {
-          var ifRec = record.transform({
-            fromType: 'salesorder',
-            fromId: parseInt(salesorderID),
-            toType: 'itemfulfillment',
-            isDynamic: true,
-            defaultValues: { inventorylocation: new_location }
-          });
-        } else {
-          var ifRec = record.transform({
-            fromType: 'salesorder',
-            fromId: parseInt(salesorderID),
-            toType: 'itemfulfillment',
-            isDynamic: true
-          });
-        }
-
-        log.debug({ title: 'ifRec', details: ifRec })
-        var lineCount = ifRec.getLineCount({ sublistId: 'item' })
-        for (var index = 0; index < lineCount; index++) {
-          ifRec.selectLine({ sublistId: 'item', line: index })
-          var lineIdOrder = ifRec.getCurrentSublistValue({ sublistId: 'item', fieldId: 'orderline' })
-          log.debug({ title: 'lineIdOrder', details: lineIdOrder })
-          ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: false })
-          ifRec.commitLine({ sublistId: 'item' })
-        }
-        for (var x = 0; x < purchaseOrderID.length; x++) {
-
-          var itemID = purchaseOrderID[x].itemID;
-          //var qty = purchaseOrderID[x].qty;
-          var qty = purchaseOrderID[x].shippingQty || purchaseOrderID[x].qty;
-          var shipment_Date = purchaseOrderID[x].shipment_date;
-          var new_location = purchaseOrderID[x].location_new
-          var linenumber = purchaseOrderID[x].line_id;
-          log.debug('purchaseOrderID', purchaseOrderID[x])
-
-
-          var lineid = ifRec.findSublistLineWithValue({ sublistId: 'item', fieldId: 'orderline', value: linenumber });
-          log.debug('lineid', lineid)
-          if (lineid == -1) continue;
-
-          ifRec.selectLine({ sublistId: 'item', line: lineid })
-          ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: true })
-          if (new_location) ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'location', value: new_location })
-          ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: qty })
-
-          // ===== INVENTORY DETAIL SUBRECORD =====
-//   var invDetail = ifRec.getCurrentSublistSubrecord({
-//     sublistId: 'item',
-//     fieldId: 'inventorydetail'
-//   });
-// log.debug('invDetail',invDetail)
-//   if (invDetail) {
-//     // Clear existing inventory assignment lines (if any)
-//     var invLineCount = invDetail.getLineCount({
-//       sublistId: 'inventoryassignment'
-//     });
-//     log.debug('invLineCount',invLineCount)
-
-//     log.debug('qty',qty)
-
-//     invDetail.setCurrentSublistValue({
-//       sublistId: 'inventoryassignment',
-//       fieldId: 'inventorystatus',
-//       value: 1
-//     });
-    
-//     invDetail.setCurrentSublistValue({
-//       sublistId: 'inventoryassignment',
-//       fieldId: 'quantity',
-//       value: qty
-//     });
-    
-//     invDetail.commitLine({
-//       sublistId: 'inventoryassignment'
-//     });
-// }
-          
-          ifRec.commitLine({ sublistId: 'item' })
-
-        }
-
-        ifRec.setValue({
-          fieldId: 'shipstatus',
-          value: "A"
-        });
-
-        if (purchaseOrderID[0].tracking_number) {
-          ifRec.selectLine({ sublistId: 'package', line: 0 });
-
-          ifRec.setCurrentSublistValue({
-            sublistId: 'package',
-            fieldId: 'packagetrackingnumber',
-            value: purchaseOrderID[0].tracking_number
-          });
-
-          ifRec.commitLine({ sublistId: 'package' });
-        }
-
+    function getInputData(inputContext) {
         try {
-          if (purchaseOrderID[0].shipping_cost && purchaseOrderID[0].shipping_method) {
-            ifRec.setValue({
-              fieldId: 'shipmethod',
-              value: purchaseOrderID[0].shipping_method
-            });
 
-            ifRec.setValue({
-              fieldId: 'shippingcost',
-              value: parseFloat(purchaseOrderID[0].shipping_cost) || 0
-            });
-          }
+            var curScriptObj = runtime.getCurrentScript();
+            var userObj = runtime.getCurrentUser().id;
+            log.debug({ title: 'userObj', details: userObj })
+            var selectedPurchaseOrder = JSON.parse(curScriptObj.getParameter({ name: 'custscript_script_object_tc' }));
+            log.debug({ title: 'selectedPurchaseOrder', details: selectedPurchaseOrder });
+
+            if (selectedPurchaseOrder[0].isIFOrder) {
+                return selectedPurchaseOrder;
+            }
+
+            var shipment_Date = selectedPurchaseOrder[0]['shipment_date'];
+            var location_new = selectedPurchaseOrder[0]['location_new'];
+            var location_name = selectedPurchaseOrder[0]['location_name'];
+            var customerID = selectedPurchaseOrder[0]['customerID'];
+            var subid = selectedPurchaseOrder[0]['subid'];
+            var create_shipping_rec = selectedPurchaseOrder[0]['create_shipping_rec'];
+            var tracking_number = selectedPurchaseOrder[0]['tracking_number'];
+            var shipping_cost = selectedPurchaseOrder[0]['shipping_cost'];
+            var shipping_method = selectedPurchaseOrder[0]['shipping_method'];
+
+            var gropedByCustomer = groupByItem(selectedPurchaseOrder, 'internalID');
+            log.debug({ title: 'gropedByCustomer', details: gropedByCustomer });
+
+            return gropedByCustomer;
+
         } catch (error) {
-          log.debug('Error', error);
+            log.error({ title: 'mapReduce.getInputData', details: error });
+            throw error;
         }
+    }
 
-        itemFulfillmentRec = ifRec.save({ enableSourcing: true, ignoreMandatoryFields: true });
+    function map(context) {
+        try {
+            var purchaseOrderID = JSON.parse(context.value);
+            log.debug({ title: 'purchaseOrderID', details: purchaseOrderID });
 
-        if (itemFulfillmentRec) {
-          var salesRep = load_sales_order.getValue("salesrep");
-          var endCustomerEmail = load_sales_order.getValue("custbody_end_customer_contact_email");
-          var SO_num = load_sales_order.getValue("tranid");
-          var userObj = SAMPLE_USER_EMPLOYEE_ID;
+            if (!purchaseOrderID.isIFOrder) {
 
-          // Load the saved Item Fulfillment to get `tranid`
-          var ifSavedRec = record.load({
-            type: record.Type.ITEM_FULFILLMENT,
-            id: ifRec.id
-          });
+                var salesorderID = purchaseOrderID[0]['internalID']
+                log.debug({ title: 'salesorderID', details: salesorderID })
+                var load_sales_order = record.load({ type: record.Type.SALES_ORDER, id: salesorderID, isDynamic: true });
 
-          var ifTranId = ifSavedRec.getValue({ fieldId: 'tranid' });
+                var createIF = purchaseOrderID[0]['create_shipping_rec'] == 'T';
 
-          var updated_so = record.load({
-            type: record.Type.SALES_ORDER,
-            id: salesorderID,
-            isDynamic: true
-          });
+                for (var i = 0; i < purchaseOrderID.length; i++) {
 
-          log.debug({ title: 'userObj', details: userObj });
-          log.debug({ title: 'salesRep', details: salesRep });
+                    var itemID = purchaseOrderID[i].itemID;
+                    var qty = purchaseOrderID[i].shippingQty || purchaseOrderID[i].qty;
+                    var shipment_Date = purchaseOrderID[i].shipment_date;
+                    var new_location = purchaseOrderID[i].location_new
+                    var linenumber = purchaseOrderID[i].line_id;
 
-          // if (salesRep && SO_num && userObj) {
-          //   // var subject = 'Item Fulfillment Created: ' + ifTranId;
-          //   const trackingNum = ifSavedRec.getSublistValue({
-          //     sublistId: 'package',
-          //     fieldId: 'packagetrackingnumber',
-          //     line: 0
-          //   });
+                    var lineID = load_sales_order.findSublistLineWithValue({ sublistId: 'item', fieldId: 'line', value: linenumber });
+                    log.debug({ title: 'lineID', details: lineID })
 
-          //   var subject = trackingNum ? 'Your Trusscore Sample Order Has Been Shipped – Tracking Number #' + trackingNum : 'Your Trusscore sample order has been shipped';
+                    var lineQty = load_sales_order.getSublistValue({ sublistId: 'item', fieldId: 'quantity', line: lineID });
+                    log.debug({ title: 'lineQty', details: lineQty })
 
-          //   var body = buildFulfillmentEmailBody(updated_so, ifSavedRec, purchaseOrderID[0]);
+                    if (lineID != -1) {
+                        load_sales_order.selectLine({ sublistId: 'item', line: lineID });
 
-          //   if (endCustomerEmail) {
-          //     email.send({
-          //       author: userObj,
-          //       recipients: endCustomerEmail,
-          //       cc: [salesRep],
-          //       subject: subject,
-          //       body: body,
-          //       relatedRecords: {
-          //         transactionId: itemFulfillmentRec // ID of the Item Fulfillment record
-          //       }
-          //     });
-          //   } else if (salesRep) {
-          //     email.send({
-          //       author: userObj,
-          //       recipients: salesRep,
-          //       subject: subject,
-          //       body: body,
-          //       relatedRecords: {
-          //         transactionId: itemFulfillmentRec // ID of the Item Fulfillment record
-          //       }
-          //     });
-          //   }
-          // }
+                        if (shipment_Date) {
+                            log.debug({ title: 'shipDate', details: shipment_Date })
+                            load_sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'custcol_tc_scheduled_ship_date', value: new Date(shipment_Date) });
+                        }
+
+                        if (new_location) {
+                            load_sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'inventorylocation', value: new_location });
+                        }
+                        load_sales_order.commitLine({ sublistId: 'item' })
+                    }
+
+                }
+                load_sales_order.save({ enableSourcing: true, ignoreMandatoryFields: true })
+                log.debug({ title: 'shipment_Date', details: "shipment_Date" });
+
+                if (createIF) {
+                    if (purchaseOrderID[0].location_new) {
+                        var ifRec = record.transform({
+                            fromType: 'salesorder',
+                            fromId: parseInt(salesorderID),
+                            toType: 'itemfulfillment',
+                            isDynamic: true,
+                            defaultValues: { inventorylocation: new_location }
+                        });
+                    } else {
+                        var ifRec = record.transform({
+                            fromType: 'salesorder',
+                            fromId: parseInt(salesorderID),
+                            toType: 'itemfulfillment',
+                            isDynamic: true
+                        });
+                    }
+
+                    log.debug({ title: 'ifRec', details: ifRec })
+                    var lineCount = ifRec.getLineCount({ sublistId: 'item' })
+                    for (var index = 0; index < lineCount; index++) {
+                        ifRec.selectLine({ sublistId: 'item', line: index })
+                        var lineIdOrder = ifRec.getCurrentSublistValue({ sublistId: 'item', fieldId: 'orderline' })
+                        log.debug({ title: 'lineIdOrder', details: lineIdOrder })
+                        ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: false })
+                        ifRec.commitLine({ sublistId: 'item' })
+                    }
+                    for (var x = 0; x < purchaseOrderID.length; x++) {
+
+                        var itemID = purchaseOrderID[x].itemID;
+                        //var qty = purchaseOrderID[x].qty;
+                        var qty = purchaseOrderID[x].shippingQty || purchaseOrderID[x].qty;
+                        var shipment_Date = purchaseOrderID[x].shipment_date;
+                        var new_location = purchaseOrderID[x].location_new
+                        var linenumber = purchaseOrderID[x].line_id;
+                        log.debug('purchaseOrderID', purchaseOrderID[x])
+
+
+                        var lineid = ifRec.findSublistLineWithValue({ sublistId: 'item', fieldId: 'orderline', value: linenumber });
+                        log.debug('lineid', lineid)
+                        if (lineid == -1) continue;
+
+                        ifRec.selectLine({ sublistId: 'item', line: lineid })
+                        ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: true })
+                        if (new_location) ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'location', value: new_location })
+                        ifRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: qty })
+
+                        // ===== INVENTORY DETAIL SUBRECORD =====
+                        //   var invDetail = ifRec.getCurrentSublistSubrecord({
+                        //     sublistId: 'item',
+                        //     fieldId: 'inventorydetail'
+                        //   });
+                        // log.debug('invDetail',invDetail)
+                        //   if (invDetail) {
+                        //     // Clear existing inventory assignment lines (if any)
+                        //     var invLineCount = invDetail.getLineCount({
+                        //       sublistId: 'inventoryassignment'
+                        //     });
+                        //     log.debug('invLineCount',invLineCount)
+
+                        //     log.debug('qty',qty)
+
+                        //     invDetail.setCurrentSublistValue({
+                        //       sublistId: 'inventoryassignment',
+                        //       fieldId: 'inventorystatus',
+                        //       value: 1
+                        //     });
+
+                        //     invDetail.setCurrentSublistValue({
+                        //       sublistId: 'inventoryassignment',
+                        //       fieldId: 'quantity',
+                        //       value: qty
+                        //     });
+
+                        //     invDetail.commitLine({
+                        //       sublistId: 'inventoryassignment'
+                        //     });
+                        // }
+
+                        ifRec.commitLine({ sublistId: 'item' })
+
+                    }
+
+                    ifRec.setValue({
+                        fieldId: 'shipstatus',
+                        value: "A"
+                    });
+
+                    if (purchaseOrderID[0].tracking_number) {
+                        ifRec.selectLine({ sublistId: 'package', line: 0 });
+
+                        ifRec.setCurrentSublistValue({
+                            sublistId: 'package',
+                            fieldId: 'packagetrackingnumber',
+                            value: purchaseOrderID[0].tracking_number
+                        });
+
+                        ifRec.commitLine({ sublistId: 'package' });
+                    }
+
+                    try {
+                        if (purchaseOrderID[0].shipping_cost && purchaseOrderID[0].shipping_method) {
+                            ifRec.setValue({
+                                fieldId: 'shipmethod',
+                                value: purchaseOrderID[0].shipping_method
+                            });
+
+                            ifRec.setValue({
+                                fieldId: 'shippingcost',
+                                value: parseFloat(purchaseOrderID[0].shipping_cost) || 0
+                            });
+                        }
+                    } catch (error) {
+                        log.debug('Error', error);
+                    }
+
+                    itemFulfillmentRec = ifRec.save({ enableSourcing: true, ignoreMandatoryFields: true });
+
+                    if (itemFulfillmentRec) {
+                        var salesRep = load_sales_order.getValue("salesrep");
+                        var endCustomerEmail = load_sales_order.getValue("custbody_end_customer_contact_email");
+                        var SO_num = load_sales_order.getValue("tranid");
+                        var userObj = SAMPLE_USER_EMPLOYEE_ID;
+
+                        // Load the saved Item Fulfillment to get `tranid`
+                        var ifSavedRec = record.load({
+                            type: record.Type.ITEM_FULFILLMENT,
+                            id: ifRec.id
+                        });
+
+                        var ifTranId = ifSavedRec.getValue({ fieldId: 'tranid' });
+
+                        var updated_so = record.load({
+                            type: record.Type.SALES_ORDER,
+                            id: salesorderID,
+                            isDynamic: true
+                        });
+
+                        log.debug({ title: 'userObj', details: userObj });
+                        log.debug({ title: 'salesRep', details: salesRep });
+
+                        // if (salesRep && SO_num && userObj) {
+                        //   // var subject = 'Item Fulfillment Created: ' + ifTranId;
+                        //   const trackingNum = ifSavedRec.getSublistValue({
+                        //     sublistId: 'package',
+                        //     fieldId: 'packagetrackingnumber',
+                        //     line: 0
+                        //   });
+
+                        //   var subject = trackingNum ? 'Your Trusscore Sample Order Has Been Shipped – Tracking Number #' + trackingNum : 'Your Trusscore sample order has been shipped';
+
+                        //   var body = buildFulfillmentEmailBody(updated_so, ifSavedRec, purchaseOrderID[0]);
+
+                        //   if (endCustomerEmail) {
+                        //     email.send({
+                        //       author: userObj,
+                        //       recipients: endCustomerEmail,
+                        //       cc: [salesRep],
+                        //       subject: subject,
+                        //       body: body,
+                        //       relatedRecords: {
+                        //         transactionId: itemFulfillmentRec // ID of the Item Fulfillment record
+                        //       }
+                        //     });
+                        //   } else if (salesRep) {
+                        //     email.send({
+                        //       author: userObj,
+                        //       recipients: salesRep,
+                        //       subject: subject,
+                        //       body: body,
+                        //       relatedRecords: {
+                        //         transactionId: itemFulfillmentRec // ID of the Item Fulfillment record
+                        //       }
+                        //     });
+                        //   }
+                        // }
+                    }
+                }
+            } else {
+                updateIF(purchaseOrderID)
+            }
+
+        } catch (error) {
+            log.error({ title: 'mapReduce.map', details: error });
+            throw error;
         }
-      }
-      } else {
-        updateIF(purchaseOrderID)
-      }
-
-    } catch (error) {
-      log.error({ title: 'mapReduce.map', details: error });
-      throw error;
     }
-  }
 
-  function summarize(summary) {
+    function summarize(summary) {
 
-    summary.mapSummary.errors.iterator().each(function (key, value) {
-      log.error(key, 'ERROR String: ' + value);
-      return true;
-    });
-  }
-
-  function groupByItem(list, key) {
-    return list.reduce(function (rv, x) {
-      (rv[x[key]] = rv[x[key]] || []).push(x);
-      return rv;
-    }, {});
-  }
-
-  function isEmpty(value) {
-    if (value === null) {
-      return true;
-    } else if (value === undefined) {
-      return true;
-    } else if (value === '') {
-      return true;
-    } else if (value === ' ') {
-      return true;
-    } else if (value === 'null') {
-      return true;
-    } else {
-      return false;
+        summary.mapSummary.errors.iterator().each(function (key, value) {
+            log.error(key, 'ERROR String: ' + value);
+            return true;
+        });
     }
-  }
 
-  function getCustomerEmail(customerId) {
-    if (!customerId) return null;
+    function groupByItem(list, key) {
+        return list.reduce(function (rv, x) {
+            (rv[x[key]] = rv[x[key]] || []).push(x);
+            return rv;
+        }, {});
+    }
 
-    var email = search.lookupFields({
-      type: search.Type.CUSTOMER,
-      id: customerId,
-      columns: ['email']
-    }).email;
+    function isEmpty(value) {
+        if (value === null) {
+            return true;
+        } else if (value === undefined) {
+            return true;
+        } else if (value === '') {
+            return true;
+        } else if (value === ' ') {
+            return true;
+        } else if (value === 'null') {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-    return email || null;
-  }
+    function getCustomerEmail(customerId) {
+        if (!customerId) return null;
 
-  function updateIF(obj) {
+        var email = search.lookupFields({
+            type: search.Type.CUSTOMER,
+            id: customerId,
+            columns: ['email']
+        }).email;
+
+        return email || null;
+    }
+
+    function updateIF(obj) {
         try {
             log.debug('obj', obj);
             if (!obj.IFnum) return {};
@@ -390,13 +390,13 @@ function mapReduce(error, record, runtime, render, email, search, task, format) 
             let scheduleShipDateIF;
 
             try {
-              scheduleShipDateIF = IFRec.getSublistValue({
-                 sublistId: 'item',
-                 fieldId: 'custcol_tc_scheduled_ship_date',
-                 line: 0
-               });
+                scheduleShipDateIF = IFRec.getSublistValue({
+                    sublistId: 'item',
+                    fieldId: 'custcol_tc_scheduled_ship_date',
+                    line: 0
+                });
             } catch (error) {
-              log.debug('error in schedule ship date fetching');
+                log.debug('error in schedule ship date fetching');
             }
 
             const salesRep = load_sales_order.getValue("salesrep");
@@ -528,9 +528,9 @@ function mapReduce(error, record, runtime, render, email, search, task, format) 
         return htmlBody;
     }
 
-  return {
-    getInputData: getInputData,
-    map: map,
-    summarize: summarize
-  };
+    return {
+        getInputData: getInputData,
+        map: map,
+        summarize: summarize
+    };
 };
