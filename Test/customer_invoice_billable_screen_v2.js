@@ -548,7 +548,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                             }
 
-                            if (subCustOrFilters) {
+                            if (subCustOrFilters.length) {
                                 filterArray.push("AND", subCustOrFilters);
                             }
 
