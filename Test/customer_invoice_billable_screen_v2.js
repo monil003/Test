@@ -18,11 +18,10 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
         const NAF_ITEM_ID = 621;
         const MEDIA_OWNER_ITEM_ID = 7692;
         const MEDIA_ITEM_ID = 618;
-        const MR_SCRIPT_INTERNAL_ID = 3461; //test
 
         const SUBCUSTOMER_ITEMS = [NAF_ITEM_ID.toString(), TECH_ITEM_ID.toString(), ROYALTIES_ITEM_ID.toString(), ROYALTIES_CAD_ID.toString(), ROYALTIES_CAD_VAR_ID.toString(), ROYALTIES_USD_VAR_ID.toString()];
         const OWNER_TECH_ITEMS = [MEDIA_OWNER_ITEM_ID.toString(), TECH_ITEM_ID.toString()];
-      
+
         function onRequest(context) {
             try {
 
@@ -33,12 +32,11 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                 const OWNER_TECH_FILE_ID = getLatestFileFromFolder(TECH_FOLDER) || 9388647;
                 const SUBCUST_BB_GRAY_FILE_ID = getLatestFileFromFolder(BBGRAY_SUBCUST_FOLDER) || 9390350;
-                const TERMS_DEFAULT = params.custscript_terms;
-              
-                const ROY_STACK =  params.custscript_roy_percent ? parsePercent(params.custscript_roy_percent) : 3.5;
-                const NAF_STACK =  params.custscript_naf_percent ? parsePercent(params.custscript_naf_percent) : 1;
-                const BBGRAY_STACK =  params.custscript_bbgray_percent ? parsePercent(params.custscript_bbgray_percent) : 3.5;
-              
+
+                const ROY_STACK = params.custscript_roy_percent ? parsePercent(params.custscript_roy_percent) : 3.5;
+                const NAF_STACK = params.custscript_naf_percent ? parsePercent(params.custscript_naf_percent) : 1;
+                const BBGRAY_STACK = params.custscript_bbgray_percent ? parsePercent(params.custscript_bbgray_percent) : 3.5;
+
                 if (context.request.method === "GET") {
                     const form = serverWidget.createForm({
                         title: "HFC | Invoice Billable Customer Screen V2"
@@ -321,9 +319,9 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     sublist.addField({ id: 'custpage_billdate', type: serverWidget.FieldType.DATE, label: 'Bill Date' });
                     sublist.addField({ id: 'custpage_stage', type: serverWidget.FieldType.TEXT, label: 'Stage' });
                     sublist.addField({ id: 'custpage_subsidiary_text', type: serverWidget.FieldType.TEXT, label: 'Subsidiary' });
-                    
+
                     const custTerritory = sublist.addField({ id: 'custpage_cust_territory', type: serverWidget.FieldType.TEXT, label: '# Territory' }).updateDisplayType({ displayType: serverWidget.FieldDisplayType.HIDDEN });
-                    
+
                     sublist.addField({ id: 'custpage_subsidiary', type: serverWidget.FieldType.TEXT, label: 'Subsidiary' }).updateDisplayType({ displayType: serverWidget.FieldDisplayType.HIDDEN });
                     sublist.addField({ id: 'custpage_department', type: serverWidget.FieldType.TEXT, label: 'Department' }).updateDisplayType({ displayType: serverWidget.FieldDisplayType.HIDDEN });
                     sublist.addField({ id: 'custpage_billingacc_col_id', type: serverWidget.FieldType.TEXT, label: 'Billing Account Id' }).updateDisplayType({ displayType: serverWidget.FieldDisplayType.HIDDEN });
@@ -363,73 +361,73 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     // }
 
                     if (variableBillingFilter == 'T' || ownerTechBillingFilter == 'T' || bbgrayBillingFilter == 'T' || subCustomerBillingFilter == 'T') {
-                      // ownerSublistFld.updateDisplayType({ displayType: serverWidget.FieldDisplayType.READONLY });
-                      isVariableCalc.defaultValue = 'T';
+                        // ownerSublistFld.updateDisplayType({ displayType: serverWidget.FieldDisplayType.READONLY });
+                        isVariableCalc.defaultValue = 'T';
                     } else {
-                      isVariableCalc.defaultValue = 'F';
+                        isVariableCalc.defaultValue = 'F';
                     }
 
                     // BBGRAY BILLING FILTER
                     if (bbgrayBillingFilter == 'T' || variableBillingFilter == 'T') {
-                      const BBReportData = readCsvMaster(SUBCUST_BB_GRAY_FILE_ID);
+                        const BBReportData = readCsvMaster(SUBCUST_BB_GRAY_FILE_ID);
 
-                      bbMasterReport = BBReportData;
+                        bbMasterReport = BBReportData;
 
-                      const bbGrayResult = filterBBReport(BBReportData);
+                        const bbGrayResult = filterBBReport(BBReportData);
 
-                      if (bbGrayResult.resultMap) {
-                        bbGrayMap = bbGrayResult.resultMap
-                      }
+                        if (bbGrayResult.resultMap) {
+                            bbGrayMap = bbGrayResult.resultMap
+                        }
 
-                      if (bbGrayResult.ownerIdList) {
-                        bbGrayOwnerIds = bbGrayResult.ownerIdList
-                      }
+                        if (bbGrayResult.ownerIdList) {
+                            bbGrayOwnerIds = bbGrayResult.ownerIdList
+                        }
 
-                      bbGrayBillingFld.defaultValue = 'T';  
+                        bbGrayBillingFld.defaultValue = 'T';
                     }
 
                     // OWNER TECH BILLLING FILTER
                     if (variableBillingFilter == 'T' || ownerTechBillingFilter == 'T') {
-                      custTerritory.updateDisplayType({ displayType: serverWidget.FieldDisplayType.NORMAL });
+                        custTerritory.updateDisplayType({ displayType: serverWidget.FieldDisplayType.NORMAL });
 
-                      ownerTechBillingFld.defaultValue = 'T';
+                        ownerTechBillingFld.defaultValue = 'T';
 
-                      try {
-                        const techCSVData = readCsvMaster(OWNER_TECH_FILE_ID, true);
+                        try {
+                            const techCSVData = readCsvMaster(OWNER_TECH_FILE_ID, true);
 
-                        if (techCSVData) {
-                          techCSVData.forEach(r => {
-                            if (r.ownernumber) {
-                              territoryMap[r.ownernumber] = r.territories || 0;
+                            if (techCSVData) {
+                                techCSVData.forEach(r => {
+                                    if (r.ownernumber) {
+                                        territoryMap[r.ownernumber] = r.territories || 0;
+                                    }
+                                });
                             }
-                          });
-                        } 
-                      } catch (error) {
-                        log.debug('error in csv reader', error);
-                      }
+                        } catch (error) {
+                            log.debug('error in csv reader', error);
+                        }
                     } else {
-                      custTerritory.updateDisplayType({ displayType: serverWidget.FieldDisplayType.HIDDEN });
+                        custTerritory.updateDisplayType({ displayType: serverWidget.FieldDisplayType.HIDDEN });
                     }
 
                     //SUBCUSTOMER BILLING FILTER
                     if (subCustomerBillingFilter == 'T' || variableBillingFilter == 'T') {
 
-                      let csvData;
-                      if (!bbMasterReport.length) {
-                         csvData = readCsvMaster(SUBCUST_BB_GRAY_FILE_ID);
-                      } else {
-                        csvData = bbMasterReport;
-                      }
+                        let csvData;
+                        if (!bbMasterReport.length) {
+                            csvData = readCsvMaster(SUBCUST_BB_GRAY_FILE_ID);
+                        } else {
+                            csvData = bbMasterReport;
+                        }
 
-                      const subCustomersList = filterBBReport(csvData);
+                        const subCustomersList = filterBBReport(csvData);
 
-                      if (subCustomersList.subCustomers) {
-                        subCustomersMap = subCustomersList.subCustomers;
-                      }
+                        if (subCustomersList.subCustomers) {
+                            subCustomersMap = subCustomersList.subCustomers;
+                        }
 
-                      if (subCustomersList.subCustomersOwnerIds) {
-                        subCustOwnerList = subCustomersList.subCustomersOwnerIds;
-                      }
+                        if (subCustomersList.subCustomersOwnerIds) {
+                            subCustOwnerList = subCustomersList.subCustomersOwnerIds;
+                        }
                     }
 
                     log.debug('territoryMap', territoryMap);
@@ -474,87 +472,87 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                         }
 
                         if (ownerTechBillingFilter == 'T') {
-                          if (variableBillingFilter != 'T') {
-                            filterArray.push("AND", ["customer.parent", "anyof", "@NONE@"]);
-                            filterArray.push("AND", ["name", "contains", "tech"]);
-                          }
-                          ownerTechBillingFld.defaultValue = ownerTechBillingFilter;
+                            if (variableBillingFilter != 'T') {
+                                filterArray.push("AND", ["customer.parent", "anyof", "@NONE@"]);
+                                filterArray.push("AND", ["name", "contains", "tech"]);
+                            }
+                            ownerTechBillingFld.defaultValue = ownerTechBillingFilter;
                         }
 
                         if (bbgrayBillingFilter == 'T' && bbGrayOwnerIds.length) {
-                          if (variableBillingFilter != 'T') {
-                             filterArray.push("AND", ["customer.parent", "anyof", "@NONE@"]);
-                          } 
-                            
-                          if (variableBillingFilter == 'T' && subCustomerBillingFilter == 'T') {
-                            bbGrayOwnerIds.forEach(ownerIdIs => {
-                              subCustOwnerList.push(ownerIdIs);
-                            });
-                          } else {
+                            if (variableBillingFilter != 'T') {
+                                filterArray.push("AND", ["customer.parent", "anyof", "@NONE@"]);
+                            }
 
-                            var ownerOrFilters = [];
-
-                            if (bbGrayOwnerIds.length < 500) {
-                            
-                              bbGrayOwnerIds.forEach(function (val, index) {
-                                 ownerOrFilters.push(
-                                   ["customer.custentity_kdl_cust_owner_id", "contains", val]
-                                 );
-
-                                 if (index < bbGrayOwnerIds.length - 1) {
-                                   ownerOrFilters.push("OR");
-                                 }
-                              });
-                              
+                            if (variableBillingFilter == 'T' && subCustomerBillingFilter == 'T') {
+                                bbGrayOwnerIds.forEach(ownerIdIs => {
+                                    subCustOwnerList.push(ownerIdIs);
+                                });
                             } else {
-                              bbGrayOverLengthCase = true;
+
+                                var ownerOrFilters = [];
+
+                                if (bbGrayOwnerIds.length < 500) {
+
+                                    bbGrayOwnerIds.forEach(function (val, index) {
+                                        ownerOrFilters.push(
+                                            ["customer.custentity_kdl_cust_owner_id", "contains", val]
+                                        );
+
+                                        if (index < bbGrayOwnerIds.length - 1) {
+                                            ownerOrFilters.push("OR");
+                                        }
+                                    });
+
+                                } else {
+                                    bbGrayOverLengthCase = true;
+                                }
+
+                                if (ownerOrFilters.length) {
+                                    filterArray.push("AND", ownerOrFilters);
+                                    filterArray.push("AND", ["name", "contains", "gray"]);
+                                }
+
                             }
 
-                            if (ownerOrFilters.length) {
-                              filterArray.push("AND", ownerOrFilters);
-                              filterArray.push("AND", ["name", "contains", "gray"]);
-                            }
-                            
-                          }
-                          
-                          bbGrayBillingFld.defaultValue = bbgrayBillingFilter;
+                            bbGrayBillingFld.defaultValue = bbgrayBillingFilter;
                         }
 
                         if (customerVal) {
                             if (variableBillingFilter == 'T') {
-                              subCustOwnerList = [];
-                            } 
+                                subCustOwnerList = [];
+                            }
 
                             filterArray.push("AND", ["customer", "anyof", customerVal]);
-                            custFld.defaultValue = customerVal; 
+                            custFld.defaultValue = customerVal;
                         }
 
                         if (subCustomerBillingFilter == 'T' && subCustOwnerList.length) {
-                          if (variableBillingFilter != 'T') {
-                             filterArray.push("AND", ["customer.parent", "noneof", "@NONE@"]);
-                          }
+                            if (variableBillingFilter != 'T') {
+                                filterArray.push("AND", ["customer.parent", "noneof", "@NONE@"]);
+                            }
 
-                          let subCustOrFilters = [];
+                            let subCustOrFilters = [];
 
-                          if (subCustOwnerList.length < 500) {
-                            
-                              subCustOwnerList.forEach(function (val, index) {
-                                 subCustOrFilters.push(
-                                   ["customer.entityid", "contains", val]
-                                 );
+                            if (subCustOwnerList.length < 500) {
 
-                                 if (index < subCustOwnerList.length - 1) {
-                                   subCustOrFilters.push("OR");
-                                 }
-                              });
-                              
-                          }
+                                subCustOwnerList.forEach(function (val, index) {
+                                    subCustOrFilters.push(
+                                        ["customer.entityid", "contains", val]
+                                    );
 
-                          if (subCustOrFilters) {
-                            filterArray.push("AND", subCustOrFilters);
-                          }
-                          
-                          subCustomerBillingFld.defaultValue = subCustomerBillingFilter;
+                                    if (index < subCustOwnerList.length - 1) {
+                                        subCustOrFilters.push("OR");
+                                    }
+                                });
+
+                            }
+
+                            if (subCustOrFilters) {
+                                filterArray.push("AND", subCustOrFilters);
+                            }
+
+                            subCustomerBillingFld.defaultValue = subCustomerBillingFilter;
                         }
 
                         if (dateFromVal && dateToVal) {
@@ -582,13 +580,13 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             itemFilter.defaultValue = multiSelectItems;
                         } else {
                             if (subCustomerBillingFilter == 'T') {
-                              filterArray.push("AND", ["subscriptionline.item", "anyof", SUBCUSTOMER_ITEMS]);
-                              itemFilter.defaultValue = multiSelectItems;
+                                filterArray.push("AND", ["subscriptionline.item", "anyof", SUBCUSTOMER_ITEMS]);
+                                itemFilter.defaultValue = multiSelectItems;
                             }
-                            
+
                             if (ownerTechBillingFilter == 'T') {
-                              filterArray.push("AND", ["subscriptionline.item", "anyof", OWNER_TECH_ITEMS]);
-                              itemFilter.defaultValue = multiSelectItems;
+                                filterArray.push("AND", ["subscriptionline.item", "anyof", OWNER_TECH_ITEMS]);
+                                itemFilter.defaultValue = multiSelectItems;
                             }
                         }
 
@@ -634,11 +632,11 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                         });
 
                         try {
-                          pagedData = subscriptionSearch.runPaged({
-                            pageSize: pageSize
-                          }); 
+                            pagedData = subscriptionSearch.runPaged({
+                                pageSize: pageSize
+                            });
                         } catch (error) {
-                          context.response.writePage(form);
+                            context.response.writePage(form);
                         }
 
                         // Requested page
@@ -725,232 +723,6 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                         const pageObj = pagedData.fetch(pageRanges[pageIndex].index);
                         let i = 0;
 
-                        const resultRows = [];
-
-                        // /* =========================
-                        //  * COLLECT + CALCULATE
-                        //  * ========================= */
-                        // pageObj.data.forEach(result => {
-
-                        //     const itemText = result.getValue(itemTextCol);
-                        //     const entityText = result.getValue(entityTextCol);
-                        //     const customerId = result.getValue("customer");
-                        //     const customerEntityId = result.getValue({ name: "entityid", join: "customer" });
-                        //     const billAccId = result.getValue("billingaccount");
-                        //     const subscritpionId = result.id;
-                        //     const itemID = result.getValue({ name: "item", join: "subscriptionLine" });
-                        //     const ownerId = result.getValue({ name: "custentity_kdl_cust_owner_id", join: "customer" });
-                        //     const chargeId = result.getValue({ name: "id", join: "charge" });
-                        //     const subsidiaryId = result.getValue({ name: "subsidiary" });
-                        //     const countOfTerritory = territoryMap[ownerId] || null;
-
-                        //     if (bbgrayBillingFilter === 'T' && bbGrayOverLengthCase) {
-                        //         const ownerLookup = Object.create(null);
-                        //         bbGrayOwnerIds.forEach(id => ownerLookup[String(id)] = true);
-                        //         if (!ownerLookup[ownerId]) return true;
-                        //     }
-
-                        //     let amount = 0;
-                        //     if (itemText === 'Career Plug' || itemText === 'CAREERPLUG') {
-                        //         amount = parseFloat(result.getValue({ name: "custrecord_career_plan_fee", join: "charge" })) || 0;
-                        //     } else {
-                        //         amount = parseFloat(result.getValue({ name: "amount", join: "charge" })) || 0;
-                        //     }
-
-                        //     let calculatedAmount = 0;
-
-                        //     if (ownerTechBillingFilter === 'T' && countOfTerritory) {
-                        //         calculatedAmount = getTechAmount(countOfTerritory);
-                        //     }
-
-                        //     if (bbgrayBillingFilter === 'T') {
-                        //         calculatedAmount = getPercentValue(bbGrayMap[ownerId], BBGRAY_STACK);
-                        //     }
-
-                        //     if (subCustomerBillingFilter === 'T') {
-                        //         const subCustMonthlyFees = subCustomersMap[customerEntityId] || 0;
-
-                        //         if (itemText?.toLowerCase().includes("roy")) {
-                        //             calculatedAmount = Math.max(
-                        //                 getPercentValue(subCustMonthlyFees, ROY_STACK),
-                        //                 amount
-                        //             );
-                        //         } else if (itemText?.toLowerCase().includes("naf")) {
-                        //             calculatedAmount = getPercentValue(subCustMonthlyFees, NAF_STACK);
-                        //         } else if (itemText?.toLowerCase().includes("tech")) {
-                        //             calculatedAmount = subCustMonthlyFees;
-                        //         }
-                        //     }
-
-                        //     resultRows.push({
-                        //         result,
-                        //         billDate: new Date(result.getValue({ name: "billdate", join: "charge" })),
-                        //         amount,
-                        //         calculatedAmount,
-                        //         finalAmount: calculatedAmount || amount,
-                        //         itemText,
-                        //         entityText,
-                        //         customerId,
-                        //         customerEntityId,
-                        //         billAccId,
-                        //         subscritpionId,
-                        //         itemID,
-                        //         ownerId,
-                        //         chargeId,
-                        //         subsidiaryId,
-                        //         countOfTerritory
-                        //     });
-
-                        //     return true;
-                        // });
-
-                        // /* =========================================
-                        //  * SORT: Bill Date ASC → Amount DESC
-                        //  * ========================================= */
-                        // resultRows.sort((a, b) => {
-                        //     if (a.billDate.getTime() !== b.billDate.getTime()) {
-                        //         return a.billDate - b.billDate;
-                        //     }
-                        //     return b.finalAmount - a.finalAmount;
-                        // });
-
-                        // /* =========================
-                        //  * RENDER SUBLIST
-                        //  * ========================= */
-                        // resultRows.forEach(row => {
-                        //     const r = row.result;
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_customer_col',
-                        //         line: i,
-                        //         value: `<a href="/app/common/entity/custjob.nl?id=${row.customerId}" target="_blank">${r.getText("customer")}</a>`
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_customer_col_id',
-                        //         line: i,
-                        //         value: row.customerId
-                        //     });
-
-                        //     if (row.ownerId) {
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_customer_owner_id',
-                        //             line: i,
-                        //             value: row.ownerId
-                        //         });
-                        //     }
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_subscription_col',
-                        //         line: i,
-                        //         value: `<a href="/app/accounting/subscription/subscription.nl?id=${row.subscritpionId}" target="_blank">${r.getValue("name")}</a>`
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_billingacc_col',
-                        //         line: i,
-                        //         value: `<a href="/app/accounting/otherlists/billingaccount.nl?id=${row.billAccId}" target="_blank">${r.getText("billingaccount")}</a>`
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_billingacc_col_id',
-                        //         line: i,
-                        //         value: row.billAccId
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_item',
-                        //         line: i,
-                        //         value: `<a href="/app/common/item/item.nl?id=${row.itemID}" target="_blank">${r.getText({ name: "item", join: "subscriptionLine" })}</a>`
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_item_id',
-                        //         line: i,
-                        //         value: row.itemID
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_charge_id_display',
-                        //         line: i,
-                        //         value: `<a href="/app/accounting/transactions/billing/charge.nl?id=${row.chargeId}" target="_blank">${row.chargeId}</a>`
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_chargeid',
-                        //         line: i,
-                        //         value: row.chargeId
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_amount',
-                        //         line: i,
-                        //         value: row.amount.toFixed(2)
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_amount_calculated',
-                        //         line: i,
-                        //         value: row.calculatedAmount.toFixed(2)
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_billdate',
-                        //         line: i,
-                        //         value: r.getValue({ name: "billdate", join: "charge" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_stage',
-                        //         line: i,
-                        //         value: r.getValue({ name: "stage", join: "charge" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_subsidiary_text',
-                        //         line: i,
-                        //         value: `<a href="/app/common/otherlists/subsidiarytype.nl?id=${row.subsidiaryId}" target="_blank">${r.getText({ name: "subsidiary" })}</a>`
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_subsidiary',
-                        //         line: i,
-                        //         value: row.subsidiaryId
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_department',
-                        //         line: i,
-                        //         value: r.getValue({ name: "department", join: "billingAccount" }) || 1
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_currency',
-                        //         line: i,
-                        //         value: r.getValue({ name: "currency", join: "billingAccount" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_entity_text',
-                        //         line: i,
-                        //         value: row.entityText || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_item_text',
-                        //         line: i,
-                        //         value: row.itemText || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_charge_customer_sales',
-                        //         line: i,
-                        //         value: r.getValue({ name: "custrecord_hfc_customer_sales", join: "charge" }) || "0"
-                        //     });
-
-                        //     i++;
-                        // });
-
                         pageObj.data.forEach(result => {
 
                             const itemText = result.getValue(itemTextCol);
@@ -967,16 +739,16 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             const countOfTerritory = territoryMap[ownerId] || null;
 
                             if (bbgrayBillingFilter == 'T' && bbGrayOverLengthCase) {
-                              //Special case in which BBGRAY have 500+ owners
-                              
-                              let ownerLookup = Object.create(null);
-                              bbGrayOwnerIds.forEach(function (id) {
-                                 ownerLookup[String(id)] = true;
-                              });
+                                //Special case in which BBGRAY have 500+ owners
 
-                              if (!ownerLookup[ownerId]) {
-                                return true;
-                              }
+                                let ownerLookup = Object.create(null);
+                                bbGrayOwnerIds.forEach(function (id) {
+                                    ownerLookup[String(id)] = true;
+                                });
+
+                                if (!ownerLookup[ownerId]) {
+                                    return true;
+                                }
                             }
 
                             let amount;
@@ -1003,11 +775,11 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             });
 
                             if (ownerId) {
-                              sublist.setSublistValue({
-                                 id: 'custpage_customer_owner_id',
-                                 line: i,
-                                 value: ownerId || ""
-                              }); 
+                                sublist.setSublistValue({
+                                    id: 'custpage_customer_owner_id',
+                                    line: i,
+                                    value: ownerId || ""
+                                });
                             }
 
                             sublist.setSublistValue({
@@ -1060,24 +832,24 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                                     line: i,
                                     value: result.getValue({ name: "custrecord_career_plan_fee", join: "charge" }) || "0"
                                 });
-                            } 
+                            }
                             else if (ownerTechBillingFilter == 'T' && countOfTerritory) {
-                              const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
-                              
-                              sublist.setSublistValue({
-                                 id: 'custpage_amount_calculated',
-                                 line: i,
-                                 value: techAmount
-                              });
+                                const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
 
-                              variableAmount += techAmount;
-                              
-                              sublist.setSublistValue({
-                                 id: 'custpage_cust_territory',
-                                 line: i,
-                                 value: countOfTerritory
-                              });
-                            } 
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount_calculated',
+                                    line: i,
+                                    value: techAmount
+                                });
+
+                                variableAmount += techAmount;
+
+                                sublist.setSublistValue({
+                                    id: 'custpage_cust_territory',
+                                    line: i,
+                                    value: countOfTerritory
+                                });
+                            }
                             else {
                                 sublist.setSublistValue({
                                     id: 'custpage_amount',
@@ -1087,48 +859,48 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             }
 
                             if (bbgrayBillingFilter == 'T') {
-                              const bbGrayMonthlyFees = bbGrayMap[ownerId];
+                                const bbGrayMonthlyFees = bbGrayMap[ownerId];
 
-                              const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
+                                const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
 
-                              variableAmount += calculatedBBGrayFees;
+                                variableAmount += calculatedBBGrayFees;
 
-                              sublist.setSublistValue({
-                                 id: 'custpage_amount_calculated',
-                                 line: i,
-                                 value: calculatedBBGrayFees || "0"
-                              });
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount_calculated',
+                                    line: i,
+                                    value: calculatedBBGrayFees || "0"
+                                });
 
                             }
 
                             if (subCustomerBillingFilter == 'T') {
-                              const subCustMonthlyFees = subCustomersMap[customerEntityId];
-                              let calculatedSubCustomerFees = 0;
+                                const subCustMonthlyFees = subCustomersMap[customerEntityId];
+                                let calculatedSubCustomerFees = 0;
 
-                              if (itemText && itemText.toLowerCase().includes("roy")) {
-                                // isRoy = true;
-                                calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
+                                if (itemText && itemText.toLowerCase().includes("roy")) {
+                                    // isRoy = true;
+                                    calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
 
-                                if (amount > calculatedSubCustomerFees) {
-                                   calculatedSubCustomerFees = amount;
+                                    if (amount > calculatedSubCustomerFees) {
+                                        calculatedSubCustomerFees = amount;
+                                    }
                                 }
-                              }
 
-                              if (itemText && itemText.toLowerCase().includes("naf")) {
-                                calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
-                              }
+                                if (itemText && itemText.toLowerCase().includes("naf")) {
+                                    calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
+                                }
 
-                              if (itemText && itemText.toLowerCase().includes("tech")) {
-                                calculatedSubCustomerFees = subCustMonthlyFees;
-                              }
+                                if (itemText && itemText.toLowerCase().includes("tech")) {
+                                    calculatedSubCustomerFees = subCustMonthlyFees;
+                                }
 
-                              variableAmount += calculatedSubCustomerFees;
+                                variableAmount += calculatedSubCustomerFees;
 
-                              sublist.setSublistValue({
-                                 id: 'custpage_amount_calculated',
-                                 line: i,
-                                 value: calculatedSubCustomerFees || "0"
-                              });
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount_calculated',
+                                    line: i,
+                                    value: calculatedSubCustomerFees || "0"
+                                });
 
                             }
 
@@ -1186,14 +958,6 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                                 value: result.getValue({ name: "custrecord_hfc_customer_sales", join: "charge" }) || "0"
                             });
 
-                            resultRows.push({
-                               result,
-                               billDate: new Date(result.getValue({ name: "billdate", join: "charge" })),
-                               amount,
-                               calculatedAmount,
-                               finalAmount: calculatedAmount || amount
-                            });
-
                             i++;
                             return true;
                         });
@@ -1202,9 +966,9 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     log.debug('isVariableCalc', isVariableCalc.defaultValue);
 
                     if (isVariableCalc.defaultValue == 'T') {
-                      totalAmountFld.defaultValue = variableAmount.toFixed(2);
+                        totalAmountFld.defaultValue = variableAmount.toFixed(2);
                     } else {
-                      totalAmountFld.defaultValue = initialTotal.toFixed(2);
+                        totalAmountFld.defaultValue = initialTotal.toFixed(2);
                     }
 
 
@@ -1243,7 +1007,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     const isVariableBilling = req.parameters.custpage_variable_calc;
 
                     log.debug('isVariableBilling', isVariableBilling);
-                  
+
                     for (let i = 0; i < lineCount; i++) {
                         const checked = req.getSublistValue({
                             group: 'custpage_results',
@@ -1313,9 +1077,9 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             });
 
                             if (isVariableBilling == 'T') {
-                              if (varCalcAmount) payload['amount'] = varCalcAmount
+                                if (varCalcAmount) payload['amount'] = varCalcAmount
                             } else {
-                              if (amount) payload['amount'] = amount;
+                                if (amount) payload['amount'] = amount;
                             }
 
 
@@ -1364,7 +1128,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     var scheduleMRScriptTask = task.create({
                         taskType: task.TaskType.MAP_REDUCE,
                         scriptId: 'customscript_hfc_v2_invoice_creation_mr',
-                        deploymentId: availableDeploymentInstance,
+                        deploymentId: 'customdeploy_hfc_v2_invoice_creation_mr',
                         params: {
                             'custscript_invoice_list_': selectedDataForInvoice
                         }
@@ -1415,13 +1179,14 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
         function getFreeDeployment() {
 
-            const DEPLOYMENTS = ['customdeploy_hfc_v2_invoice_creation_mr', 'customdeploy_hfc_v2_inv_creation_mr_2', 'customdeploy_hfc_v2_inv_creation_mr_3'];
+            const DEPLOYMENTS = ['customdeploy_hfc_invoice_creation_mr', 'customdeploy_hfc_invoice_creation_mr_2', 'customdeploy_hfc_invoice_creation_mr_3'];
+            const SCRIPT_INTERNAL_ID = 3451;
 
             // Search existing running deployments
             const runningSearch = search.create({
                 type: "scheduledscriptinstance",
                 filters: [
-                    ["script.internalid", "anyof", MR_SCRIPT_INTERNAL_ID],
+                    ["script.internalid", "anyof", SCRIPT_INTERNAL_ID],
                     "AND",
                     ["status", "anyof", "PENDING", "PROCESSING"]
                 ],
@@ -1436,19 +1201,10 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
             let runningDeployments = [];
 
             runningSearch.run().each(function (result) {
-                const depId = result.getValue({
-                  name: "scriptid",
-                  join: "scriptDeployment"
-                });
-
-                if (depId) {
-                  runningDeployments.push(depId.toLowerCase());
-                }
-                
-                // runningDeployments.push(result.getValue({
-                //     name: "scriptid",
-                //     join: "scriptDeployment"
-                // }));
+                runningDeployments.push(result.getValue({
+                    name: "scriptid",
+                    join: "scriptDeployment"
+                }));
                 return true;
             });
 
@@ -1459,7 +1215,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
             log.debug('Free Deployment:', freeDeployment || 'None Available');
 
-            return freeDeployment || 'customdeploy_hfc_v2_inv_creation_mr_3';
+            return freeDeployment || 'customdeploy_hfc_invoice_creation_mr_3';
         }
 
         function getScriptParams() {
@@ -1470,8 +1226,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                 custscript_variable_report_folder: script.getParameter({ name: 'custscript_variable_report_folder' }),
                 custscript_bbgray_percent: script.getParameter({ name: 'custscript_bbgray_percent' }),
                 custscript_roy_percent: script.getParameter({ name: 'custscript_roy_percent' }),
-                custscript_naf_percent: script.getParameter({ name: 'custscript_naf_percent' }),
-                custscript_terms: script.getParameter({ name: 'custscript_terms' }),
+                custscript_naf_percent: script.getParameter({ name: 'custscript_naf_percent' })
             };
         }
 
@@ -1487,15 +1242,15 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
             ];
 
             if (isSubCustFilter == 'T') {
-              itemSearchFilters.push("AND");
-              itemSearchFilters.push(["internalid","anyof", SUBCUSTOMER_ITEMS]);
+                itemSearchFilters.push("AND");
+                itemSearchFilters.push(["internalid", "anyof", SUBCUSTOMER_ITEMS]);
             }
 
             if (isTechFilter == 'T') {
-              itemSearchFilters.push("AND");
-              itemSearchFilters.push(["internalid","anyof", OWNER_TECH_ITEMS]);
+                itemSearchFilters.push("AND");
+                itemSearchFilters.push(["internalid", "anyof", OWNER_TECH_ITEMS]);
             }
-          
+
             const itemSearchObj = search.create({
                 type: "item",
                 filters: itemSearchFilters,
@@ -1620,7 +1375,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
             log.debug('headerMap', headerMap);
 
             if (isTechMap) {
-              const parsedTechRows = rows.map((line, idx) => {
+                const parsedTechRows = rows.map((line, idx) => {
                     const cols = splitCsvLine(line);
                     const rowObj = {};
 
@@ -1710,7 +1465,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                 let monthly = row.monthly_report || '0';
                 monthly = Number(monthly.replace(/,/g, '')) || 0;
-                
+
                 if (ownerId.toLowerCase().includes('gray')) {
                     resultMap[row.owner_] = monthly;
                     ownerIdList.push(row.owner_);
@@ -1718,16 +1473,16 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     subCustomers[row.acctterrnum] = monthly;
 
                     if (row.owner_ != 'GRAND TOTAL' && row.owner_ != '') {
-                       subCustomersOwnerIds.push(row.owner_);
+                        subCustomersOwnerIds.push(row.owner_);
                     }
                 }
             });
 
             return {
-              resultMap,
-              ownerIdList,
-              subCustomers,
-              subCustomersOwnerIds
+                resultMap,
+                ownerIdList,
+                subCustomers,
+                subCustomersOwnerIds
             };
         }
 
@@ -1742,23 +1497,23 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
         }
 
         function getPercentValue(value, percent) {
-           value = parseFloat(value) || 0;
-           percent = Number(percent) || 0;
-          
-           return value * (percent / 100);
+            value = parseFloat(value) || 0;
+            percent = Number(percent) || 0;
+
+            return value * (percent / 100);
         }
 
         function parsePercent(val, defaultVal) {
-          if (!val) return defaultVal;
-          return parseFloat(val.toString().replace('%', '').trim());
+            if (!val) return defaultVal;
+            return parseFloat(val.toString().replace('%', '').trim());
         }
 
         function getCurrentMonthDateRange() {
             const today = new Date();
-        
+
             const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
             const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        
+
             return {
                 from: format.format({
                     value: monthStart,
