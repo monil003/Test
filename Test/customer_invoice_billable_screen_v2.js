@@ -722,6 +722,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                         const pageObj = pagedData.fetch(pageRanges[pageIndex].index);
                         let i = 0;
+                        const techAmountMap = loadTechAmounts();
 
                         pageObj.data.forEach(result => {
 
@@ -834,7 +835,8 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                                 });
                             }
                             else if (ownerTechBillingFilter == 'T' && countOfTerritory) {
-                                const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
+                                // const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
+                                const techAmount = countOfTerritory ? (techAmountMap[countOfTerritory] || 0) : 0;
 
                                 sublist.setSublistValue({
                                     id: 'custpage_amount_calculated',
@@ -1301,6 +1303,28 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
             });
 
             return techAmount;
+        }
+
+        function loadTechAmounts() {
+            var techMap = {};
+
+            var searchObj = search.create({
+                type: "customrecord_hfc_techbbvariable",
+                columns: [
+                    "custrecord_hfc_owneractiveterritories",
+                    "custrecord_hfc_techamount"
+                ]
+            });
+
+            searchObj.run().each(function (result) {
+                var territory = result.getValue("custrecord_hfc_owneractiveterritories");
+                var amount = parseFloat(result.getValue("custrecord_hfc_techamount")) || 0;
+
+                techMap[territory] = amount;
+                return true;
+            });
+
+            return techMap;
         }
 
         function readCsvMaster(fileId, isTechMap) {
