@@ -534,7 +534,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                             let subCustOrFilters = [];
 
-                            if (subCustOwnerList.length < 500) {
+                            if (subCustOwnerList.length < 1800) {
 
                                 subCustOwnerList.forEach(function (val, index) {
                                     subCustOrFilters.push(
