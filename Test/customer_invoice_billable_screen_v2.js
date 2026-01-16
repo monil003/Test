@@ -1463,7 +1463,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                 const ownerId = (row.acctterrnum || '').toString().trim();
 
-                let monthly = row.monthly_report || '0';
+                let monthly = row.mtd_total_sales_for_invoicing_cm_lr || '0';
                 monthly = Number(monthly.replace(/,/g, '')) || 0;
 
                 if (ownerId.toLowerCase().includes('gray')) {
