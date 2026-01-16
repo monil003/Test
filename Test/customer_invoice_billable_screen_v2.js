@@ -432,15 +432,15 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                       }
                     }
 
-                    // log.debug('territoryMap', territoryMap);
-                    // log.debug('bbGrayMap', bbGrayMap);
-                    // log.debug('bbGrayOwnerIds', bbGrayOwnerIds);
-                    // log.debug('subCustomersMap', subCustomersMap);
-                    // log.debug('subCustOwnerList', subCustOwnerList);
-                    // log.debug('variableBillingFilter', variableBillingFilter);
-                    // log.debug('ownerTechBillingFilter', ownerTechBillingFilter);
-                    // log.debug('bbgrayBillingFilter', bbgrayBillingFilter);
-                    // log.debug('subCustomerBillingFilter', subCustomerBillingFilter);
+                    log.debug('territoryMap', territoryMap);
+                    log.debug('bbGrayMap', bbGrayMap);
+                    log.debug('bbGrayOwnerIds', bbGrayOwnerIds);
+                    log.debug('subCustomersMap', subCustomersMap);
+                    log.debug('subCustOwnerList', subCustOwnerList);
+                    log.debug('variableBillingFilter', variableBillingFilter);
+                    log.debug('ownerTechBillingFilter', ownerTechBillingFilter);
+                    log.debug('bbgrayBillingFilter', bbgrayBillingFilter);
+                    log.debug('subCustomerBillingFilter', subCustomerBillingFilter);
 
                     const dateFromVal = context.request.parameters.custpage_date_from ? formatDateForNS(context.request.parameters.custpage_date_from) : '';
                     const dateToVal = context.request.parameters.custpage_date_to ? formatDateForNS(context.request.parameters.custpage_date_to) : '';
