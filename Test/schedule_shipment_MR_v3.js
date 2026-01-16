@@ -386,6 +386,12 @@ function mapReduce(error, record, runtime, render, email, search, task, format) 
                     fieldId: 'custcol_tc_scheduled_ship_date',
                     line: 0
                 });
+
+                if (obj.shippingCost) {
+                  load_sales_order.setValue({ fieldId: 'custbody_tc_sampleshippingcost', value: obj.shippingCost });
+                }
+
+                load_sales_order.save({ enableSourcing: true, ignoreMandatoryFields: true });
             } catch (error) {
                 log.debug('error in schedule ship date fetching');
             }
