@@ -1006,6 +1006,8 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             return true;
                         });
 
+                        log.debug('rows', rows);
+
                         rows.forEach((row, i) => {
 
                             sublist.setSublistValue({
