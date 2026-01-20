@@ -443,7 +443,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                     const dateFromVal = context.request.parameters.custpage_date_from ? formatDateForNS(context.request.parameters.custpage_date_from) : '';
                     const dateToVal = context.request.parameters.custpage_date_to ? formatDateForNS(context.request.parameters.custpage_date_to) : '';
                     const runSearch = context.request.parameters.search === "T";
-                    const pageSize = 500;
+                    const pageSize = 1000;
                     var pageIndex = parseInt(context.request.parameters.page || 0);
 
                     if (context.request.parameters.custpage_date_from) {
