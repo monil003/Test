@@ -1064,13 +1064,13 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                                 id: 'custpage_charge_id_display',
                                 line: i,
                                 // value: result.getValue({ name: "id", join: "charge" }) || ""
-                                value: '<a href="/app/accounting/transactions/billing/charge.nl?id=' + chargeId + '" target="_blank">' + chargeId + '</a>'
+                                value: '<a href="/app/accounting/transactions/billing/charge.nl?id=' + row.chargeId + '" target="_blank">' + row.chargeId + '</a>'
                             });
 
                             sublist.setSublistValue({
                                 id: 'custpage_chargeid',
                                 line: i,
-                                value: chargeId || ""
+                                value: row.chargeId || ""
                             });
 
                             if (row.itemText == 'Career Plug' || row.itemText == 'CAREERPLUG') {
