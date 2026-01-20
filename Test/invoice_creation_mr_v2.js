@@ -206,7 +206,7 @@ define(['N/record', 'N/search', 'N/log', 'N/runtime'], function (record, search,
             // var invId = 4652935;
             log.audit('Invoice Created', 'Invoice ID: ' + invId + ' for Charge: ' + data.charge);
 
-            updateChargeToNonBillable(data.charge);
+            // updateChargeToNonBillable(data.charge);
 
             updateCreatedInvoicesSearch();
 
