@@ -742,96 +742,277 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             const customerId = result.getValue("customer");
                             const customerEntityId = result.getValue({ name: "entityid", join: "customer" });
                             const billAccId = result.getValue("billingaccount");
-                            const subscriptionId = result.id;
+                            const subscritpionId = result.id;
                             const itemID = result.getValue({ name: "item", join: "subscriptionLine" });
+                            const isParentCustomerExist = result.getValue({ name: "parent", join: "customer" });
                             const ownerId = result.getValue({ name: "custentity_kdl_cust_owner_id", join: "customer" });
                             const chargeId = result.getValue({ name: "id", join: "charge" });
                             const subsidiaryId = result.getValue({ name: "subsidiary" });
                             const countOfTerritory = territoryMap[ownerId] || null;
 
-                            // --- filters ---
-                            if (bbgrayBillingFilter === 'T' && bbGrayOverLengthCase) {
-                                if (!bbGrayOwnerIds.includes(Number(ownerId))) {
-                                    return true;
-                                }
-                            }
+                            const rowData = {};
 
-                            let amount = 0;
-                            if (itemText === 'Career Plug' || itemText === 'CAREERPLUG') {
+                            // if (bbgrayBillingFilter == 'T' && bbGrayOverLengthCase) {
+                            //     //Special case in which BBGRAY have 500+ owners
+
+                            //     let ownerLookup = Object.create(null);
+                            //     bbGrayOwnerIds.forEach(function (id) {
+                            //         ownerLookup[String(id)] = true;
+                            //     });
+
+                            //     if (!ownerLookup[ownerId]) {
+                            //         return true;
+                            //     }
+                            // }
+
+                            let amount;
+
+                            if (itemText == 'Career Plug' || itemText == 'CAREERPLUG') {
                                 amount = parseFloat(result.getValue({ name: "custrecord_career_plan_fee", join: "charge" })) || 0;
                             } else {
                                 amount = parseFloat(result.getValue({ name: "amount", join: "charge" })) || 0;
                             }
 
+                            rowData.amount = amount;
+                            rowData.customerId = customerId;
+                            rowData.customerText = result.getText("customer");
+                            rowData.ownerId = ownerId;
+                            row.subscritpionId = subscritpionId;
+                            row.subscritpionName = result.getValue("name");
+                            row.billAccId = billAccId;
+                            row.billAccText = result.getText("billingaccount");
+                            row.itemID = itemID;
+                            row.subscriptionLine = result.getText({ name: "item", join: "subscriptionLine" });
+                            row.subscriptionLineId = result.getValue({ name: "item", join: "subscriptionLine" });
+                            row.chargeId = chargeId;
+                            row.careerPlanFee = result.getValue({ name: "custrecord_career_plan_fee", join: "charge" });
+                            row.techAmount = countOfTerritory ? (techAmountMap[countOfTerritory] || 0) : 0;
+                            row.countOfTerritory = countOfTerritory;
+                            row.chargeAmount = result.getValue({ name: "amount", join: "charge" });
+                            row.itemText = itemText;
+                            row.bbGrayMonthlyFees = bbGrayMap[ownerId];
+                            row.subCustMonthlyFees = subCustomersMap[customerEntityId];
+                            row.billDate = result.getValue({ name: "billdate", join: "charge" });
+                            row.chargeStage = result.getValue({ name: "stage", join: "charge" });
+                            row.subsidiaryId = subsidiaryId;
+                            row.subsidiaryText = result.getText({ name: "subsidiary" });
+                            row.department = result.getValue({ name: "department", join: "billingAccount" });
+                            row.currency = result.getValue({ name: "currency", join: "billingAccount" });
+                            row.entityText = entityText;
+                            row.customerSalesCharge = result.getValue({ name: "custrecord_hfc_customer_sales", join: "charge" });
+
                             initialTotal += amount;
 
-                            // --- calculated amount ---
-                            let calculatedAmount = 0;
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_customer_col',
+                            //     line: i,
+                            //     // value: result.getText("customer") || ""
+                            //     value: '<a href="/app/common/entity/custjob.nl?id=' + customerId + '" target="_blank">' + result.getText("customer") + '</a>'
+                            // });
 
-                            if (ownerTechBillingFilter === 'T' && countOfTerritory) {
-                                calculatedAmount = techAmountMap[countOfTerritory] || 0;
-                                variableAmount += calculatedAmount;
-                            }
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_customer_col_id',
+                            //     line: i,
+                            //     value: result.getValue("customer") || ""
+                            // });
 
-                            if (bbgrayBillingFilter === 'T') {
-                                const bbGrayMonthlyFees = bbGrayMap[ownerId] || 0;
-                                calculatedAmount += getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
-                                variableAmount += calculatedAmount;
-                            }
+                            // if (ownerId) {
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_customer_owner_id',
+                            //         line: i,
+                            //         value: ownerId || ""
+                            //     });
+                            // }
 
-                            if (subCustomerBillingFilter === 'T') {
-                                const subCustMonthlyFees = subCustomersMap[customerEntityId] || 0;
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_subscription_col',
+                            //     line: i,
+                            //     value: '<a href="/app/accounting/subscription/subscription.nl?id=' + subscritpionId + '" target="_blank">' + result.getValue("name") + '</a>'
+                            // });
 
-                                if (itemText?.toLowerCase().includes("roy")) {
-                                    calculatedAmount = Math.max(
-                                        getPercentValue(subCustMonthlyFees, ROY_STACK),
-                                        amount
-                                    );
-                                }
-                                if (itemText?.toLowerCase().includes("naf")) {
-                                    calculatedAmount = getPercentValue(subCustMonthlyFees, NAF_STACK);
-                                }
-                                if (itemText?.toLowerCase().includes("tech")) {
-                                    calculatedAmount = subCustMonthlyFees;
-                                }
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_billingacc_col',
+                            //     line: i,
+                            //     value: '<a href="/app/accounting/otherlists/billingaccount.nl?id=' + billAccId + '" target="_blank">' + result.getText("billingaccount") + '</a>'
+                            // });
 
-                                variableAmount += calculatedAmount;
-                            }
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_billingacc_col_id',
+                            //     line: i,
+                            //     value: result.getValue("billingaccount") || ""
+                            // });
 
-                            // --- push row object ---
-                            rows.push({
-                                customerId,
-                                customerText: result.getText("customer"),
-                                ownerId,
-                                subscriptionId,
-                                subscriptionName: result.getValue("name"),
-                                billAccId,
-                                billAccText: result.getText("billingaccount"),
-                                itemID,
-                                itemText,
-                                chargeId,
-                                amount,
-                                calculatedAmount,
-                                billDate: result.getValue({ name: "billdate", join: "charge" }),
-                                stage: result.getValue({ name: "stage", join: "charge" }),
-                                subsidiaryId,
-                                subsidiaryText: result.getText({ name: "subsidiary" }),
-                                department: result.getValue({ name: "department", join: "billingAccount" }) || 1,
-                                currency: result.getValue({ name: "currency", join: "billingAccount" }),
-                                entityText,
-                                territoryCount: countOfTerritory,
-                                customerSales: result.getValue({ name: "custrecord_hfc_customer_sales", join: "charge" }) || 0
-                            });
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_item',
+                            //     line: i,
+                            //     // value: result.getText({ name: "item", join: "subscriptionLine" }) || ""
+                            //     value: '<a href="/app/common/item/item.nl?id=' + itemID + '" target="_blank">' + result.getText({ name: "item", join: "subscriptionLine" }) + '</a>'
+                            // });
 
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_item_id',
+                            //     line: i,
+                            //     value: result.getValue({ name: "item", join: "subscriptionLine" }) || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_charge_id_display',
+                            //     line: i,
+                            //     // value: result.getValue({ name: "id", join: "charge" }) || ""
+                            //     value: '<a href="/app/accounting/transactions/billing/charge.nl?id=' + chargeId + '" target="_blank">' + result.getValue({ name: "id", join: "charge" }) + '</a>'
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_chargeid',
+                            //     line: i,
+                            //     value: result.getValue({ name: "id", join: "charge" }) || ""
+                            // });
+
+                            // if (itemText == 'Career Plug' || itemText == 'CAREERPLUG') {
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_amount',
+                            //         line: i,
+                            //         value: result.getValue({ name: "custrecord_career_plan_fee", join: "charge" }) || "0"
+                            //     });
+                            // }
+                            // else if (ownerTechBillingFilter == 'T' && countOfTerritory) {
+                            //     // const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
+                            //     const techAmount = countOfTerritory ? (techAmountMap[countOfTerritory] || 0) : 0;
+
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_amount_calculated',
+                            //         line: i,
+                            //         value: techAmount
+                            //     });
+
+                            //     variableAmount += techAmount;
+
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_cust_territory',
+                            //         line: i,
+                            //         value: countOfTerritory
+                            //     });
+                            // }
+                            // else {
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_amount',
+                            //         line: i,
+                            //         value: result.getValue({ name: "amount", join: "charge" }) || "0"
+                            //     });
+                            // }
+
+                            // if (bbgrayBillingFilter == 'T') {
+                            //     const bbGrayMonthlyFees = bbGrayMap[ownerId];
+
+                            //     const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
+
+                            //     variableAmount += calculatedBBGrayFees;
+
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_amount_calculated',
+                            //         line: i,
+                            //         value: calculatedBBGrayFees || "0"
+                            //     });
+
+                            // }
+
+                            // if (subCustomerBillingFilter == 'T') {
+                            //     const subCustMonthlyFees = subCustomersMap[customerEntityId];
+                            //     let calculatedSubCustomerFees = 0;
+
+                            //     if (itemText && itemText.toLowerCase().includes("roy")) {
+                            //         // isRoy = true;
+                            //         calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
+
+                            //         if (amount > calculatedSubCustomerFees) {
+                            //             calculatedSubCustomerFees = amount;
+                            //         }
+                            //     }
+
+                            //     if (itemText && itemText.toLowerCase().includes("naf")) {
+                            //         calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
+                            //     }
+
+                            //     if (itemText && itemText.toLowerCase().includes("tech")) {
+                            //         calculatedSubCustomerFees = subCustMonthlyFees;
+                            //     }
+
+                            //     variableAmount += calculatedSubCustomerFees;
+
+                            //     sublist.setSublistValue({
+                            //         id: 'custpage_amount_calculated',
+                            //         line: i,
+                            //         value: calculatedSubCustomerFees || "0"
+                            //     });
+
+                            // }
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_billdate',
+                            //     line: i,
+                            //     value: result.getValue({ name: "billdate", join: "charge" }) || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_stage',
+                            //     line: i,
+                            //     value: result.getValue({ name: "stage", join: "charge" }) || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_subsidiary_text',
+                            //     line: i,
+                            //     value: '<a href="/app/common/otherlists/subsidiarytype.nl?id=' + subsidiaryId + '" target="_blank">' + result.getText({ name: "subsidiary" }) + '</a>'
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_subsidiary',
+                            //     line: i,
+                            //     value: result.getValue({ name: "subsidiary" }) || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_department',
+                            //     line: i,
+                            //     value: result.getValue({ name: "department", join: "billingAccount" }) || 1
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_currency',
+                            //     line: i,
+                            //     value: result.getValue({ name: "currency", join: "billingAccount" }) || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_entity_text',
+                            //     line: i,
+                            //     value: entityText || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_item_text',
+                            //     line: i,
+                            //     value: itemText || ""
+                            // });
+
+                            // sublist.setSublistValue({
+                            //     id: 'custpage_charge_customer_sales',
+                            //     line: i,
+                            //     value: result.getValue({ name: "custrecord_hfc_customer_sales", join: "charge" }) || "0"
+                            // });
+
+                            i++;
                             return true;
                         });
+                    }
 
-                        rows.forEach((row, i) => {
+                    rows.forEach((row, i) => {
 
                             sublist.setSublistValue({
                                 id: 'custpage_customer_col',
                                 line: i,
-                                value: `<a href="/app/common/entity/custjob.nl?id=${row.customerId}" target="_blank">${row.customerText}</a>`
+                                // value: result.getText("customer") || ""
+                                value: '<a href="/app/common/entity/custjob.nl?id=' + row.customerId + '" target="_blank">' + row.customerText + '</a>'
                             });
 
                             sublist.setSublistValue({
@@ -844,290 +1025,188 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                                 sublist.setSublistValue({
                                     id: 'custpage_customer_owner_id',
                                     line: i,
-                                    value: row.ownerId
+                                    value: row.ownerId || ""
                                 });
                             }
 
                             sublist.setSublistValue({
                                 id: 'custpage_subscription_col',
                                 line: i,
-                                value: `<a href="/app/accounting/subscription/subscription.nl?id=${row.subscriptionId}" target="_blank">${row.subscriptionName}</a>`
+                                value: '<a href="/app/accounting/subscription/subscription.nl?id=' + row.subscritpionId + '" target="_blank">' + row.subscritpionName + '</a>'
                             });
 
                             sublist.setSublistValue({
                                 id: 'custpage_billingacc_col',
                                 line: i,
-                                value: `<a href="/app/accounting/otherlists/billingaccount.nl?id=${row.billAccId}" target="_blank">${row.billAccText}</a>`
+                                value: '<a href="/app/accounting/otherlists/billingaccount.nl?id=' + row.billAccId + '" target="_blank">' + row.billAccText + '</a>'
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_billingacc_col_id',
+                                line: i,
+                                value: row.billAccId || ""
                             });
 
                             sublist.setSublistValue({
                                 id: 'custpage_item',
                                 line: i,
-                                value: `<a href="/app/common/item/item.nl?id=${row.itemID}" target="_blank">${row.itemText}</a>`
+                                // value: result.getText({ name: "item", join: "subscriptionLine" }) || ""
+                                value: '<a href="/app/common/item/item.nl?id=' + row.itemID + '" target="_blank">' + row.subscriptionLine + '</a>'
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_item_id',
+                                line: i,
+                                value: row.subscriptionLineId || ""
                             });
 
                             sublist.setSublistValue({
                                 id: 'custpage_charge_id_display',
                                 line: i,
-                                value: `<a href="/app/accounting/transactions/billing/charge.nl?id=${row.chargeId}" target="_blank">${row.chargeId}</a>`
+                                // value: result.getValue({ name: "id", join: "charge" }) || ""
+                                value: '<a href="/app/accounting/transactions/billing/charge.nl?id=' + chargeId + '" target="_blank">' + chargeId + '</a>'
                             });
 
                             sublist.setSublistValue({
-                                id: 'custpage_amount',
+                                id: 'custpage_chargeid',
                                 line: i,
-                                value: row.amount.toString()
+                                value: chargeId || ""
                             });
 
-                            if (row.calculatedAmount) {
+                            if (row.itemText == 'Career Plug' || row.itemText == 'CAREERPLUG') {
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount',
+                                    line: i,
+                                    value: row.careerPlanFee || "0"
+                                });
+                            }
+                            else if (ownerTechBillingFilter == 'T' && row.countOfTerritory) {
+                                // const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
+                                const techAmount = row.techAmount;
+
                                 sublist.setSublistValue({
                                     id: 'custpage_amount_calculated',
                                     line: i,
-                                    value: row.calculatedAmount.toString()
+                                    value: techAmount
+                                });
+
+                                variableAmount += techAmount;
+
+                                sublist.setSublistValue({
+                                    id: 'custpage_cust_territory',
+                                    line: i,
+                                    value: row.countOfTerritory
+                                });
+                            }
+                            else {
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount',
+                                    line: i,
+                                    value: row.chargeAmount || "0"
                                 });
                             }
 
+                            if (bbgrayBillingFilter == 'T') {
+                                const bbGrayMonthlyFees = row.bbGrayMonthlyFees;
+
+                                const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
+
+                                variableAmount += calculatedBBGrayFees;
+
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount_calculated',
+                                    line: i,
+                                    value: calculatedBBGrayFees || "0"
+                                });
+
+                            }
+
+                            if (subCustomerBillingFilter == 'T') {
+                                const subCustMonthlyFees = row.subCustMonthlyFees;
+                                let calculatedSubCustomerFees = 0;
+
+                                if (row.itemText && row.itemText.toLowerCase().includes("roy")) {
+                                    // isRoy = true;
+                                    calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
+
+                                    if (row.amount > calculatedSubCustomerFees) {
+                                        calculatedSubCustomerFees = row.amount;
+                                    }
+                                }
+
+                                if (row.itemText && row.itemText.toLowerCase().includes("naf")) {
+                                    calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
+                                }
+
+                                if (row.itemText && row.itemText.toLowerCase().includes("tech")) {
+                                    calculatedSubCustomerFees = subCustMonthlyFees;
+                                }
+
+                                variableAmount += calculatedSubCustomerFees;
+
+                                sublist.setSublistValue({
+                                    id: 'custpage_amount_calculated',
+                                    line: i,
+                                    value: calculatedSubCustomerFees || "0"
+                                });
+
+                            }
+
+                            sublist.setSublistValue({
+                                id: 'custpage_billdate',
+                                line: i,
+                                value: row.billDate || ""
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_stage',
+                                line: i,
+                                value: row.chargeStage || ""
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_subsidiary_text',
+                                line: i,
+                                value: '<a href="/app/common/otherlists/subsidiarytype.nl?id=' + row.subsidiaryId + '" target="_blank">' + row.subsidiaryText + '</a>'
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_subsidiary',
+                                line: i,
+                                value: row.subsidiaryId || ""
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_department',
+                                line: i,
+                                value: row.department || 1
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_currency',
+                                line: i,
+                                value: row.currency || ""
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_entity_text',
+                                line: i,
+                                value: row.entityText || ""
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_item_text',
+                                line: i,
+                                value: row.itemText || ""
+                            });
+
+                            sublist.setSublistValue({
+                                id: 'custpage_charge_customer_sales',
+                                line: i,
+                                value: row.customerSalesCharge || "0"
+                            });
+
                         });
-
-                        // pageObj.data.forEach(result => {
-
-                        //     const itemText = result.getValue(itemTextCol);
-                        //     const entityText = result.getValue(entityTextCol);
-                        //     const customerId = result.getValue("customer");
-                        //     const customerEntityId = result.getValue({ name: "entityid", join: "customer" });
-                        //     const billAccId = result.getValue("billingaccount");
-                        //     const subscritpionId = result.id;
-                        //     const itemID = result.getValue({ name: "item", join: "subscriptionLine" });
-                        //     const isParentCustomerExist = result.getValue({ name: "parent", join: "customer" });
-                        //     const ownerId = result.getValue({ name: "custentity_kdl_cust_owner_id", join: "customer" });
-                        //     const chargeId = result.getValue({ name: "id", join: "charge" });
-                        //     const subsidiaryId = result.getValue({ name: "subsidiary" });
-                        //     const countOfTerritory = territoryMap[ownerId] || null;
-
-                        //     if (bbgrayBillingFilter == 'T' && bbGrayOverLengthCase) {
-                        //         //Special case in which BBGRAY have 500+ owners
-
-                        //         let ownerLookup = Object.create(null);
-                        //         bbGrayOwnerIds.forEach(function (id) {
-                        //             ownerLookup[String(id)] = true;
-                        //         });
-
-                        //         if (!ownerLookup[ownerId]) {
-                        //             return true;
-                        //         }
-                        //     }
-
-                        //     let amount;
-
-                        //     if (itemText == 'Career Plug' || itemText == 'CAREERPLUG') {
-                        //         amount = parseFloat(result.getValue({ name: "custrecord_career_plan_fee", join: "charge" })) || 0;
-                        //     } else {
-                        //         amount = parseFloat(result.getValue({ name: "amount", join: "charge" })) || 0;
-                        //     }
-
-                        //     initialTotal += amount;
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_customer_col',
-                        //         line: i,
-                        //         // value: result.getText("customer") || ""
-                        //         value: '<a href="/app/common/entity/custjob.nl?id=' + customerId + '" target="_blank">' + result.getText("customer") + '</a>'
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_customer_col_id',
-                        //         line: i,
-                        //         value: result.getValue("customer") || ""
-                        //     });
-
-                        //     if (ownerId) {
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_customer_owner_id',
-                        //             line: i,
-                        //             value: ownerId || ""
-                        //         });
-                        //     }
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_subscription_col',
-                        //         line: i,
-                        //         value: '<a href="/app/accounting/subscription/subscription.nl?id=' + subscritpionId + '" target="_blank">' + result.getValue("name") + '</a>'
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_billingacc_col',
-                        //         line: i,
-                        //         value: '<a href="/app/accounting/otherlists/billingaccount.nl?id=' + billAccId + '" target="_blank">' + result.getText("billingaccount") + '</a>'
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_billingacc_col_id',
-                        //         line: i,
-                        //         value: result.getValue("billingaccount") || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_item',
-                        //         line: i,
-                        //         // value: result.getText({ name: "item", join: "subscriptionLine" }) || ""
-                        //         value: '<a href="/app/common/item/item.nl?id=' + itemID + '" target="_blank">' + result.getText({ name: "item", join: "subscriptionLine" }) + '</a>'
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_item_id',
-                        //         line: i,
-                        //         value: result.getValue({ name: "item", join: "subscriptionLine" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_charge_id_display',
-                        //         line: i,
-                        //         // value: result.getValue({ name: "id", join: "charge" }) || ""
-                        //         value: '<a href="/app/accounting/transactions/billing/charge.nl?id=' + chargeId + '" target="_blank">' + result.getValue({ name: "id", join: "charge" }) + '</a>'
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_chargeid',
-                        //         line: i,
-                        //         value: result.getValue({ name: "id", join: "charge" }) || ""
-                        //     });
-
-                        //     if (itemText == 'Career Plug' || itemText == 'CAREERPLUG') {
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_amount',
-                        //             line: i,
-                        //             value: result.getValue({ name: "custrecord_career_plan_fee", join: "charge" }) || "0"
-                        //         });
-                        //     }
-                        //     else if (ownerTechBillingFilter == 'T' && countOfTerritory) {
-                        //         // const techAmount = countOfTerritory ? getTechAmount(countOfTerritory) : 0;
-                        //         const techAmount = countOfTerritory ? (techAmountMap[countOfTerritory] || 0) : 0;
-
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_amount_calculated',
-                        //             line: i,
-                        //             value: techAmount
-                        //         });
-
-                        //         variableAmount += techAmount;
-
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_cust_territory',
-                        //             line: i,
-                        //             value: countOfTerritory
-                        //         });
-                        //     }
-                        //     else {
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_amount',
-                        //             line: i,
-                        //             value: result.getValue({ name: "amount", join: "charge" }) || "0"
-                        //         });
-                        //     }
-
-                        //     if (bbgrayBillingFilter == 'T') {
-                        //         const bbGrayMonthlyFees = bbGrayMap[ownerId];
-
-                        //         const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
-
-                        //         variableAmount += calculatedBBGrayFees;
-
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_amount_calculated',
-                        //             line: i,
-                        //             value: calculatedBBGrayFees || "0"
-                        //         });
-
-                        //     }
-
-                        //     if (subCustomerBillingFilter == 'T') {
-                        //         const subCustMonthlyFees = subCustomersMap[customerEntityId];
-                        //         let calculatedSubCustomerFees = 0;
-
-                        //         if (itemText && itemText.toLowerCase().includes("roy")) {
-                        //             // isRoy = true;
-                        //             calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
-
-                        //             if (amount > calculatedSubCustomerFees) {
-                        //                 calculatedSubCustomerFees = amount;
-                        //             }
-                        //         }
-
-                        //         if (itemText && itemText.toLowerCase().includes("naf")) {
-                        //             calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
-                        //         }
-
-                        //         if (itemText && itemText.toLowerCase().includes("tech")) {
-                        //             calculatedSubCustomerFees = subCustMonthlyFees;
-                        //         }
-
-                        //         variableAmount += calculatedSubCustomerFees;
-
-                        //         sublist.setSublistValue({
-                        //             id: 'custpage_amount_calculated',
-                        //             line: i,
-                        //             value: calculatedSubCustomerFees || "0"
-                        //         });
-
-                        //     }
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_billdate',
-                        //         line: i,
-                        //         value: result.getValue({ name: "billdate", join: "charge" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_stage',
-                        //         line: i,
-                        //         value: result.getValue({ name: "stage", join: "charge" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_subsidiary_text',
-                        //         line: i,
-                        //         value: '<a href="/app/common/otherlists/subsidiarytype.nl?id=' + subsidiaryId + '" target="_blank">' + result.getText({ name: "subsidiary" }) + '</a>'
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_subsidiary',
-                        //         line: i,
-                        //         value: result.getValue({ name: "subsidiary" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_department',
-                        //         line: i,
-                        //         value: result.getValue({ name: "department", join: "billingAccount" }) || 1
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_currency',
-                        //         line: i,
-                        //         value: result.getValue({ name: "currency", join: "billingAccount" }) || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_entity_text',
-                        //         line: i,
-                        //         value: entityText || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_item_text',
-                        //         line: i,
-                        //         value: itemText || ""
-                        //     });
-
-                        //     sublist.setSublistValue({
-                        //         id: 'custpage_charge_customer_sales',
-                        //         line: i,
-                        //         value: result.getValue({ name: "custrecord_hfc_customer_sales", join: "charge" }) || "0"
-                        //     });
-
-                        //     i++;
-                        //     return true;
-                        // });
-                    }
 
                     log.debug('isVariableCalc', isVariableCalc.defaultValue);
 
