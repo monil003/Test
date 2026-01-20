@@ -646,7 +646,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                         const totalPages = pageRanges.length;
                         const totalRecords = pagedData.count;
                         const currentPage = pageIndex + 1;
-                        const recordsOnPage = page.data.length;
+                        // const recordsOnPage = pagedData.length;
 
                         // const infoHtml = `
                         //     <div style="width:100%; text-align:center; font-size:13px; margin-bottom:8px; margin-top:30px;">
@@ -668,9 +668,9 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                                     <button type="button" onclick="jumpToPage()">Go</button>
                                 </span>
 
-                                <span style="margin-left:15px;">
-                                   <strong>Records on Page:</strong> ${recordsOnPage}
-                                </span>
+                                // <span style="margin-left:15px;">
+                                //    <strong>Records on Page:</strong> ${recordsOnPage}
+                                // </span>
                                 
                                 <span>
                                     &nbsp;<strong>Total Records:</strong> ${totalRecords}
