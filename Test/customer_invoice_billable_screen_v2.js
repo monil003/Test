@@ -1005,9 +1005,8 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             i++;
                             return true;
                         });
-                    }
 
-                    rows.forEach((row, i) => {
+                        rows.forEach((row, i) => {
 
                             sublist.setSublistValue({
                                 id: 'custpage_customer_col',
@@ -1208,6 +1207,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             });
 
                         });
+                    }
 
                     log.debug('isVariableCalc', isVariableCalc.defaultValue);
 
