@@ -1018,6 +1018,30 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
 
                         log.debug('rows', rows);
 
+                        rows.sort((a, b) => {
+
+                            // ---- Bill Date DESC ----
+                            const dateA = new Date(a.billDate);
+                            const dateB = new Date(b.billDate);
+
+                            if (dateA.getTime() !== dateB.getTime()) {
+                                return dateB - dateA; // DESC
+                            }
+
+                            // ---- Amount DESC (calculatedAmount > chargeAmount > amount) ----
+                            const amountA =
+                                (a.calculatedAmount && a.calculatedAmount > 0)
+                                    ? Number(a.calculatedAmount)
+                                    : Number(a.chargeAmount || a.amount || 0);
+
+                            const amountB =
+                                (b.calculatedAmount && b.calculatedAmount > 0)
+                                    ? Number(b.calculatedAmount)
+                                    : Number(b.chargeAmount || b.amount || 0);
+
+                            return amountB - amountA; // DESC
+                        });
+
                         rows.forEach((row, i) => {
 
                             sublist.setSublistValue({
