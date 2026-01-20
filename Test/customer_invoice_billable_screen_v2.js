@@ -869,6 +869,12 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             //     value: result.getValue({ name: "id", join: "charge" }) || ""
                             // });
 
+                           if (ownerTechBillingFilter == 'T' && countOfTerritory) {
+                                const techAmount = countOfTerritory ? (techAmountMap[countOfTerritory] || 0) : 0;
+
+                                rowData.calculatedAmount = techAmount
+                            }
+
                             // if (itemText == 'Career Plug' || itemText == 'CAREERPLUG') {
                             //     sublist.setSublistValue({
                             //         id: 'custpage_amount',
@@ -902,51 +908,55 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/runtime', 'N/redirect', 'N/
                             //     });
                             // }
 
-                            // if (bbgrayBillingFilter == 'T') {
-                            //     const bbGrayMonthlyFees = bbGrayMap[ownerId];
+                            if (bbgrayBillingFilter == 'T') {
+                                const bbGrayMonthlyFees = bbGrayMap[ownerId];
 
-                            //     const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
+                                const calculatedBBGrayFees = getPercentValue(bbGrayMonthlyFees, BBGRAY_STACK);
 
-                            //     variableAmount += calculatedBBGrayFees;
+                                rowData.calculatedAmount = calculatedBBGrayFees;
 
-                            //     sublist.setSublistValue({
-                            //         id: 'custpage_amount_calculated',
-                            //         line: i,
-                            //         value: calculatedBBGrayFees || "0"
-                            //     });
+                                // variableAmount += calculatedBBGrayFees;
 
-                            // }
+                                // sublist.setSublistValue({
+                                //     id: 'custpage_amount_calculated',
+                                //     line: i,
+                                //     value: calculatedBBGrayFees || "0"
+                                // });
 
-                            // if (subCustomerBillingFilter == 'T') {
-                            //     const subCustMonthlyFees = subCustomersMap[customerEntityId];
-                            //     let calculatedSubCustomerFees = 0;
+                            }
 
-                            //     if (itemText && itemText.toLowerCase().includes("roy")) {
-                            //         // isRoy = true;
-                            //         calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
+                            if (subCustomerBillingFilter == 'T') {
+                                const subCustMonthlyFees = subCustomersMap[customerEntityId];
+                                let calculatedSubCustomerFees = 0;
 
-                            //         if (amount > calculatedSubCustomerFees) {
-                            //             calculatedSubCustomerFees = amount;
-                            //         }
-                            //     }
+                                if (itemText && itemText.toLowerCase().includes("roy")) {
+                                    // isRoy = true;
+                                    calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, ROY_STACK);
 
-                            //     if (itemText && itemText.toLowerCase().includes("naf")) {
-                            //         calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
-                            //     }
+                                    if (amount > calculatedSubCustomerFees) {
+                                        calculatedSubCustomerFees = amount;
+                                    }
+                                }
 
-                            //     if (itemText && itemText.toLowerCase().includes("tech")) {
-                            //         calculatedSubCustomerFees = subCustMonthlyFees;
-                            //     }
+                                if (itemText && itemText.toLowerCase().includes("naf")) {
+                                    calculatedSubCustomerFees = getPercentValue(subCustMonthlyFees, NAF_STACK);
+                                }
 
-                            //     variableAmount += calculatedSubCustomerFees;
+                                if (itemText && itemText.toLowerCase().includes("tech")) {
+                                    calculatedSubCustomerFees = subCustMonthlyFees;
+                                }
 
-                            //     sublist.setSublistValue({
-                            //         id: 'custpage_amount_calculated',
-                            //         line: i,
-                            //         value: calculatedSubCustomerFees || "0"
-                            //     });
+                                rowData.calculatedAmount = calculatedSubCustomerFees;
 
-                            // }
+                                // variableAmount += calculatedSubCustomerFees;
+
+                                // sublist.setSublistValue({
+                                //     id: 'custpage_amount_calculated',
+                                //     line: i,
+                                //     value: calculatedSubCustomerFees || "0"
+                                // });
+
+                            }
 
                             // sublist.setSublistValue({
                             //     id: 'custpage_billdate',
