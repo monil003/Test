@@ -16,7 +16,7 @@ define(['N/log','N/search','N/record'],
 function(log,search,record){
   function updateBuildCheckbox(scriptContext){
 
-    //test
+    //test2
 
     var customrecord1503SearchObj = search.create({
       type: "customrecord1503",
